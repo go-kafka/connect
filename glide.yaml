@@ -1,0 +1,9 @@
+package: github.com/go-kafka/connect
+homepage: https://github.com/go-kafka/connect
+license: MIT
+owners:
+- name: Ches Martin
+  email: ches@whiskeyandgrits.net
+  homepage: http://chesmart.in/
+import:
+- package: gopkg.in/alecthomas/kingpin.v2
