@@ -7,3 +7,5 @@ owners:
   homepage: http://chesmart.in/
 import:
 - package: gopkg.in/alecthomas/kingpin.v2
+- package: github.com/onsi/ginkgo
+- package: github.com/onsi/gomega
