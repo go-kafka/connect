@@ -1,16 +1,20 @@
-hash: ed4bfa3050ba641d0c57548c4e9559e86e33e3321f6a24e4393109c71eae3159
-updated: 2016-04-05T00:20:33.565659445+07:00
+hash: 210f98c039922b0c6b198f5b56a9662e2eb0155f85f028592660871677c6ed88
+updated: 2016-08-03T19:01:59.326181796+07:00
 imports:
 - name: github.com/alecthomas/template
-  version: 14fd436dd20c3cc65242a9f396b61bfc8a3926fc
+  version: 8996c35eba6800327c0561f87bbee1fdf176f278
   subpackages:
   - parse
 - name: github.com/alecthomas/units
-  version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
+  version: 8996c35eba6800327c0561f87bbee1fdf176f278
+- name: github.com/golang/protobuf
+  version: c3cefd437628a0b7d31b34fe44b3a7a540e98527
+  subpackages:
+  - proto
 - name: github.com/onsi/ginkgo
-  version: c3a655f9b37a2207fa39721b078b3173ee9218d6
+  version: 8996c35eba6800327c0561f87bbee1fdf176f278
 - name: github.com/onsi/gomega
-  version: 7ce781ea776b2fd506491011353bded2e40c8467
+  version: 8996c35eba6800327c0561f87bbee1fdf176f278
 - name: gopkg.in/alecthomas/kingpin.v2
-  version: 8cccfa8eb2e3183254457fb1749b2667fbc364c7
-devImports: []
+  version: 8996c35eba6800327c0561f87bbee1fdf176f278
+testImports: []
