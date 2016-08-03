@@ -201,6 +201,61 @@ var _ = Describe("Connectors", func() {
 		})
 	})
 
+	Describe("GetConnectorStatus", func() {
+		var resultStatus *ConnectorStatus
+		var statusCode int
+
+		BeforeEach(func() {
+			resultStatus = &ConnectorStatus{
+				Name: "local-file-source",
+				Connector: ConnectorState{
+					State:    "RUNNING",
+					WorkerID: "127.0.0.1:8083",
+				},
+				Tasks: []TaskState{
+					TaskState{
+						ID:       0,
+						State:    "RUNNING",
+						WorkerID: "127.0.0.1:8083",
+					},
+				},
+			}
+
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/connectors/local-file-source/status"),
+					ghttp.VerifyHeader(jsonAcceptHeader),
+					ghttp.RespondWithJSONEncodedPtr(&statusCode, &resultStatus),
+				),
+			)
+		})
+
+		Context("when existing connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusOK
+			})
+
+			It("returns connector status", func() {
+				status, _, err := client.GetConnectorStatus("local-file-source")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(status).To(Equal(resultStatus))
+			})
+		})
+
+		Context("when nonexisting connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusNotFound
+			})
+
+			It("returns an error response", func() {
+				status, resp, err := client.GetConnectorStatus("local-file-source")
+				Expect(err).To(HaveOccurred())
+				Expect(*status).To(BeZero())
+				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+			})
+		})
+	})
+
 	Describe("UpdateConnectorConfig", func() {
 		It("returns updated connector when successful", func() {
 			connector, err := UpdateConnectorConfig("test", ConnectorConfig{})

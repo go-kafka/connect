@@ -37,6 +37,32 @@ type TaskID struct {
 	ID            int    `json:"task"`
 }
 
+// ConnectorStatus reflects the status of a Connector and state of its Tasks.
+//
+// Having connector name and a "connector" object at top level is a little
+// awkward and produces stuttering, but it's their design, not ours.
+type ConnectorStatus struct {
+	Name      string         `json:"name"`
+	Connector ConnectorState `json:"connector"`
+	Tasks     []TaskState    `json:"tasks"`
+}
+
+// ConnectorState reflects the running state of a Connector and the worker where
+// it is running.
+type ConnectorState struct {
+	State    string `json:"state"`
+	WorkerID string `json:"worker_id"`
+}
+
+// TaskState reflects the running state of a Task and the worker where it is
+// running.
+type TaskState struct {
+	ID       int    `json:"id"`
+	State    string `json:"state"`
+	WorkerID string `json:"worker_id"`
+	Trace    string `json:"trace,omitempty"`
+}
+
 // TODO: Probably need to URL-encode connector names
 
 // CreateConnector creates a new connector instance. It returns an error if
@@ -90,6 +116,18 @@ func (c *Client) GetConnectorTasks(name string) ([]Task, *http.Response, error) 
 	var tasks []Task
 	response, err := c.get(path, &tasks)
 	return tasks, response, err
+}
+
+// GetConnectorStatus gets current status of the connector, including whether it
+// is running, failed or paused, which worker it is assigned to, error
+// information if it has failed, and the state of all its tasks.
+//
+// See: http://docs.confluent.io/current/connect/userguide.html#get--connectors-(string-name)-status
+func (c *Client) GetConnectorStatus(name string) (*ConnectorStatus, *http.Response, error) {
+	path := fmt.Sprintf("connectors/%v/status", name)
+	status := new(ConnectorStatus)
+	response, err := c.get(path, status)
+	return status, response, err
 }
 
 // UpdateConnectorConfig updates configuration for an existing connector with

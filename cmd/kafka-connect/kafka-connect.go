@@ -46,8 +46,10 @@ var (
 	tasksCmd  = app.Command("tasks", "Displays tasks currently running for a connector.")
 	tasksName = tasksCmd.Arg("name", "Name of the connector to look up.").Required().String()
 
+	statusCmd  = app.Command("status", "Gets current status of a connector.")
+	statusName = statusCmd.Arg("name", "Name of the connector to look up.").Required().String()
+
 	// TODO: New stuff
-	// status
 	// pause
 	// resume
 	// restart
@@ -92,6 +94,9 @@ func run() error {
 
 	case tasksCmd.FullCommand():
 		apiResult, _, err = client.GetConnectorTasks(*tasksName)
+
+	case statusCmd.FullCommand():
+		apiResult, _, err = client.GetConnectorStatus(*statusName)
 	}
 
 	if err != nil {
