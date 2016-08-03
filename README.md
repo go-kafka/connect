@@ -107,6 +107,16 @@ $ file ./kafka-connect
 kafka-connect: ELF 32-bit LSB executable, ARM, version 1 (SYSV), statically linked, not stripped
 ```
 
+#### Testing with Ginkgo ####
+
+This project uses the [Ginkgo] BDD testing library. You can run the tests
+normally with `go test`, but Ginkgo also has its own CLI tool [with additional
+options][ginkgo cli] for running tests, watching for file changes, generating
+stub test files, etc. This tool is not included in `vendor/`, in part because
+[Glide doesn't support that yet][glide execs], so if you'd like to use it
+you'll need to `go install github.com/onsi/ginkgo/ginkgo` to install it on your
+regular `GOPATH`. For convenience there is also a `make get-devtools` task.
+
 ### Using the Go Library ###
 
 [![GoDoc][godoc-badge]][godoc]
@@ -144,6 +154,9 @@ Please see [the Contributing Guide](CONTRIBUTING.md).
 [releases]: https://github.com/go-kafka/connect/releases
 [Glide]: https://glide.sh/
 [write go]: https://golang.org/doc/install
+[Ginkgo]: https://onsi.github.io/ginkgo/
+[ginkgo cli]: https://onsi.github.io/ginkgo/#the-ginkgo-cli
+[glide execs]: https://github.com/Masterminds/glide/pull/331
 
 [godoc-badge]: http://img.shields.io/badge/godoc-reference-blue.svg?style=flat
 [godoc]: https://godoc.org/github.com/go-kafka/connect

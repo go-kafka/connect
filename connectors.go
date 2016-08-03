@@ -92,11 +92,9 @@ func GetConnectorTasks(name string) ([]Task, error) {
 // the given name. If the connector does not exist, it will be created.
 //
 // See: http://docs.confluent.io/current/connect/userguide.html#put--connectors-(string-name)-config
-//
-// TODO: return the full connector info so that tasks are listed?
-func UpdateConnectorConfig(name string, config ConnectorConfig) error {
+func UpdateConnectorConfig(name string, config ConnectorConfig) (Connector, error) {
 	log.Println("Called UpdateConnectorConfig")
-	return nil
+	return Connector{}, nil
 }
 
 // DeleteConnector deletes a connector with the given name, halting all tasks
