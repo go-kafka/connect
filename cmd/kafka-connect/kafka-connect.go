@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -8,24 +10,19 @@ import (
 	"github.com/go-kafka/connect"
 )
 
-// VERSION is a programmatically-available declaration of the kafka-connect
-// CLI's version. This tracks the associated Kafka minor release version,
-// initially.
-const VERSION = "0.9-pre"
-
 var (
 	//-------------------------------------------------------------------------
 	// CLI Commands, Args, Flags with Kingpin
 	//-------------------------------------------------------------------------
 
 	app = kingpin.New("kafka-connect", "Command line utility for managing Kafka Connect.").
-		Version(VERSION).
+		Version(connect.VERSION).
 		Author("Ches Martin")
 
 	// debug = app.Flag("debug", "Enable debug mode.").Envar("KAFKA_CONNECT_CLI_DEBUG").Bool()
 
 	host = app.Flag("host", "Host address for the Kafka Connect REST API instance.").
-		Envar("KAFKA_CONNECT_CLI_HOST").Short('H').Default("http://localhost:8083").String()
+		Envar("KAFKA_CONNECT_CLI_HOST").Short('H').Default(connect.DefaultHostURL).String()
 
 	listCmd = app.Command("list", "Lists active connectors. Aliased as 'ls'.").Alias("ls")
 
@@ -48,15 +45,35 @@ var (
 
 	tasksCmd  = app.Command("tasks", "Displays tasks currently running for a connector.")
 	tasksName = tasksCmd.Arg("name", "Name of the connector to look up.").Required().String()
+
+	// TODO: New stuff
+	// status
+	// pause
+	// resume
+	// restart
+	// plugins
 )
 
 func main() {
+	// Localize use of os.Exit because it doesn't run deferreds
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	subcommand := kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	client := connect.NewClient(nil)
+	var apiResult interface{}
+	var err error
+	var output string
 
 	// Dispatch subcommands
 	switch subcommand {
 	case listCmd.FullCommand():
-		connect.GetConnectors()
+		apiResult, _, err = client.ListConnectors()
 
 	case createCmd.FullCommand():
 		connect.CreateConnector(connect.Connector{Name: *createName})
@@ -68,12 +85,32 @@ func main() {
 		connect.DeleteConnector(*deleteName)
 
 	case showCmd.FullCommand():
-		connect.GetConnector(*showName)
+		apiResult, _, err = client.GetConnector(*showName)
 
 	case configCmd.FullCommand():
-		connect.GetConnectorConfig(*configName)
+		apiResult, _, err = client.GetConnectorConfig(*configName)
 
 	case tasksCmd.FullCommand():
-		connect.GetConnectorTasks(*tasksName)
+		apiResult, _, err = client.GetConnectorTasks(*tasksName)
 	}
+
+	if err != nil {
+		return err
+	}
+
+	if output, err = formatPrettyJSON(apiResult); err != nil {
+		return err
+	}
+
+	fmt.Println(output)
+	return nil
+}
+
+// TODO: Some kind of formatter abstraction
+func formatPrettyJSON(v interface{}) (string, error) {
+	pretty, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(pretty), nil
 }

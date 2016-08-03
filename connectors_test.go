@@ -1,13 +1,41 @@
 package connect_test
 
 import (
+	"net/http"
+	"net/url"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/ghttp"
 
 	. "github.com/go-kafka/connect"
 )
 
 var _ = Describe("Connectors", func() {
+	var client *Client
+	var server *ghttp.Server
+
+	jsonAcceptHeader := http.Header{"Accept": []string{"application/json"}}
+
+	fileSourceConfig := ConnectorConfig{
+		"connector.class": "FileStreamSource",
+		"file":            "/tmp/test.txt",
+		"name":            "local-file-source",
+		"tasks.max":       "1",
+		"topic":           "go-kafka-connect-test",
+	}
+
+	BeforeEach(func() {
+		server = ghttp.NewServer()
+		url, _ := url.Parse(server.URL())
+		client = NewClient(nil)
+		client.BaseURL = url
+	})
+
+	AfterEach(func() {
+		server.Close()
+	})
+
 	Describe("CreateConnector", func() {
 		It("creates a new instance given a valid Connector", func() {
 			connector := Connector{Name: "test"}
@@ -19,44 +47,157 @@ var _ = Describe("Connectors", func() {
 		})
 	})
 
-	Describe("GetConnectors", func() {
+	Describe("ListConnectors", func() {
+		BeforeEach(func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/connectors"),
+					ghttp.VerifyHeader(jsonAcceptHeader),
+					ghttp.RespondWith(http.StatusOK, `["test", "phony-hdfs-sink"]`),
+				),
+			)
+		})
+
 		It("returns list of connector names", func() {
-			names := GetConnectors()
-			Expect(names).To(HaveLen(0))
+			names, _, err := client.ListConnectors()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(names).To(Equal([]string{"test", "phony-hdfs-sink"}))
 		})
 	})
 
 	Describe("GetConnector", func() {
-		PIt("returns a connector instance by name", func() {
-			connector, err := GetConnector("test")
-			Expect(err).NotTo(HaveOccurred())
-			Expect(connector.Name).To(Equal("test"))
+		var resultConnector *Connector
+		var statusCode int
+
+		BeforeEach(func() {
+			resultConnector = &Connector{
+				Name:   "local-file-source",
+				Config: fileSourceConfig,
+				Tasks:  []TaskID{TaskID{"local-file-source", 0}},
+			}
+
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/connectors/local-file-source"),
+					ghttp.VerifyHeader(jsonAcceptHeader),
+					ghttp.RespondWithJSONEncodedPtr(&statusCode, &resultConnector),
+				),
+			)
+		})
+
+		Context("when existing connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusOK
+			})
+
+			It("returns a connector", func() {
+				connector, _, err := client.GetConnector("local-file-source")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(connector).To(Equal(resultConnector))
+			})
+		})
+
+		Context("when nonexisting connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusNotFound
+			})
+
+			It("returns an error response", func() {
+				connector, resp, err := client.GetConnector("local-file-source")
+				Expect(err).To(HaveOccurred())
+				Expect(*connector).To(BeZero())
+				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+			})
 		})
 	})
 
 	Describe("GetConnectorConfig", func() {
-		It("returns configuration for an extant connector", func() {
-			config, err := GetConnectorConfig("test")
-			Expect(err).NotTo(HaveOccurred())
-			Expect(config).NotTo(BeNil()) // TODO: assert properties of the config
+		var statusCode int
+
+		BeforeEach(func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/connectors/local-file-source/config"),
+					ghttp.VerifyHeader(jsonAcceptHeader),
+					ghttp.RespondWithJSONEncodedPtr(&statusCode, &fileSourceConfig),
+				),
+			)
 		})
 
-		PIt("returns error given a nonexistent connector", func() {
-			_, err := GetConnectorConfig("invalid")
-			Expect(err).To(HaveOccurred()) // TODO: assert properties of error
+		Context("when existing connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusOK
+			})
+
+			It("returns configuration for connector", func() {
+				config, _, err := client.GetConnectorConfig("local-file-source")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(config).To(Equal(fileSourceConfig))
+			})
+		})
+
+		Context("when nonexisting connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusNotFound
+			})
+
+			It("returns an error response", func() {
+				config, resp, err := client.GetConnectorConfig("local-file-source")
+				Expect(err).To(HaveOccurred())
+				Expect(config).To(BeEmpty())
+				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+			})
 		})
 	})
 
 	Describe("GetConnectorTasks", func() {
-		It("returns tasks for an extant connector", func() {
-			tasks, err := GetConnectorTasks("test")
-			Expect(err).NotTo(HaveOccurred())
-			Expect(tasks).To(HaveLen(0)) // TODO: assert task data
+		var resultTasks []Task
+		var statusCode int
+
+		BeforeEach(func() {
+			resultTasks = []Task{
+				Task{
+					ID: TaskID{"local-file-source", 0},
+					Config: map[string]string{
+						"file":       "/tmp/test.txt",
+						"task.class": "org.apache.kafka.connect.file.FileStreamSourceTask",
+						"topic":      "go-kafka-connect-test",
+					},
+				},
+			}
+
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/connectors/local-file-source/tasks"),
+					ghttp.VerifyHeader(jsonAcceptHeader),
+					ghttp.RespondWithJSONEncodedPtr(&statusCode, &resultTasks),
+				),
+			)
 		})
 
-		PIt("returns error given a nonexistent connector", func() {
-			_, err := GetConnectorTasks("invalid")
-			Expect(err).To(HaveOccurred()) // TODO: assert properties of error
+		Context("when existing connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusOK
+			})
+
+			It("returns tasks for an extant connector", func() {
+				tasks, _, err := client.GetConnectorTasks("local-file-source")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(tasks).To(Equal(resultTasks))
+			})
+		})
+
+		Context("when nonexisting connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusNotFound
+			})
+
+			It("returns an error response", func() {
+				tasks, resp, err := client.GetConnectorTasks("local-file-source")
+				Expect(err).To(HaveOccurred())
+				Expect(tasks).To(BeEmpty())
+				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+			})
 		})
 	})
 

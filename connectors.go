@@ -1,8 +1,7 @@
 package connect
 
 import (
-	"encoding/json"
-	"errors"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -10,12 +9,10 @@ import (
 // A Connector represents a Kafka Connect connector instance.
 //
 // See: http://docs.confluent.io/current/connect/userguide.html#connectors-tasks-and-workers
-//
-// TODO: maybe omit Tasks field here, see POST /connectors endpoint
 type Connector struct {
 	Name   string          `json:"name"`
-	Config ConnectorConfig `json:"config"`
-	Tasks  []Task          `json:"tasks"`
+	Config ConnectorConfig `json:"config,omitempty"`
+	Tasks  []TaskID        `json:"tasks,omitempty"`
 }
 
 // ConnectorConfig is a key-value mapping of configuration for connectors, where
@@ -28,16 +25,19 @@ type ConnectorConfig map[string]string
 // a data copy job.
 //
 // See: http://docs.confluent.io/current/connect/userguide.html#connectors-tasks-and-workers
-//
-// TODO: see /connectors/<name>/tasks endpoint -- might want to just encode this
-// as an anon []struct member of Connector (verify the documented output, the
-// text is ambiguous)
 type Task struct {
+	ID     TaskID            `json:"id"`
+	Config map[string]string `json:"config"`
+}
+
+// A TaskID has two components, a numerical ID and a connector name by which the
+// ID is scoped.
+type TaskID struct {
 	ConnectorName string `json:"connector"`
 	ID            int    `json:"task"`
 }
 
-// TODO: Should we always return (success, error) pairs in case of HTTP errors?
+// TODO: Probably need to URL-encode connector names
 
 // CreateConnector creates a new connector instance. It returns an error if
 // creation is unsuccessful.
@@ -50,42 +50,46 @@ func CreateConnector(conn Connector) error {
 	return nil
 }
 
-// GetConnectors retrieves a list of active connector names.
+// ListConnectors retrieves a list of active connector names.
 //
 // See: http://docs.confluent.io/current/connect/userguide.html#get--connectors
-func GetConnectors() []string {
-	log.Println("Called GetConnectors")
-	return make([]string, 0)
+func (c *Client) ListConnectors() ([]string, *http.Response, error) {
+	path := "connectors"
+	var names []string
+	response, err := c.get(path, &names)
+	return names, response, err
 }
 
 // GetConnector retrieves information about a connector with the given name.
 //
 // See: http://docs.confluent.io/current/connect/userguide.html#get--connectors-(string-name)
-func GetConnector(name string) (Connector, error) {
-	log.Println("Called GetConnector")
-	return Connector{}, nil
+func (c *Client) GetConnector(name string) (*Connector, *http.Response, error) {
+	path := "connectors/" + name
+	connector := new(Connector)
+	response, err := c.get(path, connector)
+	return connector, response, err
 }
 
 // GetConnectorConfig retrieves configuration for a connector with the given
 // name.
 //
 // See: http://docs.confluent.io/current/connect/userguide.html#get--connectors-(string-name)-config
-func GetConnectorConfig(name string) (ConnectorConfig, error) {
-	log.Println("Called GetConnectorConfig")
-	return ConnectorConfig{}, nil
+func (c *Client) GetConnectorConfig(name string) (ConnectorConfig, *http.Response, error) {
+	path := fmt.Sprintf("connectors/%v/config", name)
+	config := make(ConnectorConfig)
+	response, err := c.get(path, &config)
+	return config, response, err
 }
 
 // GetConnectorTasks retrieves a list of tasks currently running for a connector
 // with the given name.
 //
 // See: http://docs.confluent.io/current/connect/userguide.html#get--connectors-(string-name)-tasks
-//
-// TODO: Erm, the example output for this endpoint is totally inconsistent with
-// what the docs describe as the output format. Need to test. And it says
-// *request* format, when there should not be a request body...
-func GetConnectorTasks(name string) ([]Task, error) {
-	log.Println("Called GetConnectorTasks")
-	return make([]Task, 0), nil
+func (c *Client) GetConnectorTasks(name string) ([]Task, *http.Response, error) {
+	path := fmt.Sprintf("connectors/%v/tasks", name)
+	var tasks []Task
+	response, err := c.get(path, &tasks)
+	return tasks, response, err
 }
 
 // UpdateConnectorConfig updates configuration for an existing connector with
@@ -109,34 +113,16 @@ func DeleteConnector(name string) bool {
 	return true
 }
 
-// TODO: either return decoded response entity, or accept one to mutate
-func sendRequest(url string) error {
-	request, err := http.NewRequest("GET", url, nil)
+func (c *Client) get(path string, v interface{}) (*http.Response, error) {
+	request, err := c.NewRequest("GET", path, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	request.Header.Set("Accept", "application/json")
-
-	client := &http.Client{}
-	response, err := client.Do(request)
+	response, err := c.Do(request, v)
 	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode >= 400 {
-		// TODO: parse APIError, implement Error() and return using the message
-		return errors.New("kafka connect: HTTP error " + response.Status + " on " + url)
+		return response, err
 	}
 
-	decoder := json.NewDecoder(response.Body)
-	// TODO: decode to appropriate entity for request
-	connector := Connector{}
-	err = decoder.Decode(&connector)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return response, err
 }
