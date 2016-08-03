@@ -5,7 +5,8 @@ go:
   - tip
 
 env:
-  - GO15VENDOREXPERIMENT=1
+  global:
+    - GO15VENDOREXPERIMENT=1
 
 install:
   - make get-devtools
@@ -14,7 +15,7 @@ install:
 # TODO: see https://onsi.github.io/ginkgo/#ginkgo-and-continuous-integration
 # Maybe separate `make ci` tasks that does random order, coverage, etc.
 script:
-  - make test
+  - make lint test
 
 # Container-based infra for builds that start faster.
 sudo: false

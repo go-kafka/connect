@@ -2,31 +2,33 @@
 
 GO := go
 
+packages := . ./cmd/...
+
 build:
 	$(GO) build
 
 install: build
-	$(GO) install $$(glide novendor)
+	$(GO) install $(packages)
 
 test: build
-	ginkgo -v $$(glide novendor)
+	ginkgo -v $(packages)
 
 # TODO: tests and coverage for CLI
 coverage: build
-	ginkgo --cover $$(glide novendor)
+	ginkgo --cover $(packages)
 	$(GO) tool cover --func connect.coverprofile
 
 browse-coverage: coverage
 	$(GO) tool cover --html connect.coverprofile
 
 # golint only takes one package or else it thinks multiple arguments are
-# directories (which it also doesn't support), so `glide novendor` won't work :-/
+# directories (which it also doesn't support), ./... includes vendor :-/
 lint:
 	golint --set_exit_status . && \
 		golint --set_exit_status ./cmd/...
 
 zen:
-	ginkgo watch -notify $$(glide novendor)
+	ginkgo watch -notify $(packages)
 
 get-devtools:
 	@echo Getting golint...
