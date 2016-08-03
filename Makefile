@@ -11,12 +11,28 @@ install: build
 test: build
 	ginkgo -v $$(glide novendor)
 
+# TODO: tests and coverage for CLI
+coverage: build
+	ginkgo --cover $$(glide novendor)
+	$(GO) tool cover --func connect.coverprofile
+
+browse-coverage: coverage
+	$(GO) tool cover --html connect.coverprofile
+
+# golint only takes one package or else it thinks multiple arguments are
+# directories (which it also doesn't support), so `glide novendor` won't work :-/
+lint:
+	golint --set_exit_status . && \
+		golint --set_exit_status ./cmd/...
+
 zen:
 	ginkgo watch -notify $$(glide novendor)
 
 get-devtools:
+	@echo Getting golint...
+	$(GO) get -u -v github.com/golang/lint/golint
 	@echo Getting the Ginkgo test runner...
-	$(GO) get -v github.com/onsi/ginkgo/ginkgo
+	$(GO) get -u -v github.com/onsi/ginkgo/ginkgo
 
 clean:
 	$(RM) *.coverprofile
@@ -29,4 +45,5 @@ clean-vendor:
 distclean: clean
 	$(GO) clean -i github.com/go-kafka/connect...
 
-.PHONY: build install test get-devtools clean clean-vendor distclean
+.PHONY: build install test coverage browse-coverage lint zen get-devtools
+.PHONY: clean clean-vendor distclean
