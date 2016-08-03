@@ -1,6 +1,7 @@
 Kafka Connect CLI
 =================
 
+[![Build Status][travis-badge]][build status]
 [![GoDoc][godoc-badge]][godoc]
 
 A fast, portable, self-documenting CLI tool to inspect and manage [Kafka
@@ -209,7 +210,7 @@ TODO
 
 - [ ] Decide and document versioning scheme. Might be best to version CLI
   separately.
-- [] Use gopkg.in for the library's sake?
+- [ ] Use gopkg.in for the library's sake?
 - [ ] Publish checksums/sigs for releases, document `gpg --verify` steps.
 - [ ] Write the package documentation in `version.go` or `doc.go`.
 - [ ] Add some examples for library usage.
@@ -227,6 +228,8 @@ TODO
 [ginkgo cli]: https://onsi.github.io/ginkgo/#the-ginkgo-cli
 [glide execs]: https://github.com/Masterminds/glide/pull/331
 
+[travis-badge]:https://travis-ci.org/go-kafka/connect.svg?branch=master
+[build status]: https://travis-ci.org/go-kafka/connect
 [godoc-badge]: http://img.shields.io/badge/godoc-reference-blue.svg?style=flat
 [godoc]: https://godoc.org/github.com/go-kafka/connect
 
