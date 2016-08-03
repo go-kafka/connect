@@ -1,6 +1,8 @@
 Kafka Connect CLI
 =================
 
+[![GoDoc][godoc-badge]][godoc]
+
 A fast, portable, self-documenting CLI tool to inspect and manage [Kafka
 Connect] connectors via the [REST API]. Because you don't want to be fumbling
 through runbooks of `curl` commands when something's going wrong, or ever
@@ -15,13 +17,56 @@ Usage
 The tool is self-documenting: run `kafka-connect help` or `kafka-connect help
 <subcommand>` when you need a reference.
 
-    $ kafka-connect list
-    $ kafka-connect create
-    $ kafka-connect update
-    $ kafka-connect delete
-    $ kafka-connect show
-    $ kafka-connect config
-    $ kafka-connect tasks
+    $ kafka-connect
+    usage: kafka-connect [<flags>] <command> [<args> ...]
+
+    Command line utility for managing Kafka Connect.
+
+    Flags:
+          --help     Show context-sensitive help (also try --help-long and --help-man).
+          --version  Show application version.
+      -H, --host="http://localhost:8083/"
+                    Host address for the Kafka Connect REST API instance.
+
+    Commands:
+      help [<command>...]
+        Show help.
+
+      list
+        Lists active connectors. Aliased as 'ls'.
+
+      create <name>
+        Creates a new connector instance.
+
+      update <name>
+        Updates a connector.
+
+      delete <name>
+        Deletes a connector. Aliased as 'rm'.
+
+      show <name>
+        Shows information about a connector and its tasks.
+
+      config <name>
+        Displays configuration of a connector.
+
+      tasks <name>
+        Displays tasks currently running for a connector.
+
+      status <name>
+        Gets current status of a connector.
+
+The process exits with a zero status when operations are successful and
+non-zero in the case of errors.
+
+### Manual Page ###
+
+If you'd like a `man` page, you can generate one and place it on your
+`MANPATH`:
+
+```sh
+$ kafka-connect --help-man > /usr/local/share/man/man1/kafka-connect.1
+```
 
 Installation
 ------------
@@ -36,8 +81,6 @@ $ curl -L -o kafka-connect https://github.com/go-kafka/connect/releases/download
 $ sha256sum kafka-connect  # Verify checksum for your arch with releases page
 $ mv kafka-connect /usr/local/bin/
 ```
-
-TODO: explain versioning scheme; publish checksums
 
 *Cross-compiled binaries are possibly untested—please report any issues. If you
 would like a binary build for a platform that is not currently published, I'm
@@ -58,24 +101,17 @@ which kafka-connect >/dev/null && eval "$(kafka-connect --completion-script-bash
 
 Predictably, use `--completion-script-zsh` for zsh.
 
-### Manual Page ###
+Options
+-------
 
-If you'd like a `man` page, you can generate one and place it on your
-`MANPATH`:
+Expanded details for select parameters, including supported environment
+variables:
 
-```sh
-$ kafka-connect --help-man > /usr/local/share/man/man1/kafka-connect.1
-```
-
-Configuration
--------------
-
-- API host address: `--host / -H`, default `http://localhost:8083/`, supports
-  environment variable `KAFKA_CONNECT_CLI_HOST`
+- `--host / -H`: API host address, default `http://localhost:8083/`. Supports
+  environment variable `KAFKA_CONNECT_CLI_HOST`. Note that you can target any
+  host in a Kafka Connect cluster.
 
 Others? `CLASSPATH` that the shell scripts support for connector plugins.
-
-Output format? JSON for scripting, tabular, Java properties?
 
 Building and Development
 ------------------------
@@ -128,9 +164,10 @@ $ go get -u github.com/go-kafka/connect
 ```
 
 The library has no dependencies beyond the standard library. Dependencies in
-this repository's `vendor/` are for the CLI tool (the `cmd` sub-package).
+this repository's `vendor/` are for the CLI tool (the `cmd` sub-package, not
+installed unless you append `/...` to the `go get` command above).
 
-TODO: use gopkg.in?
+See the API documentation linked above for examples.
 
 Alternatives
 ------------
@@ -147,6 +184,38 @@ Contributing
 ------------
 
 Please see [the Contributing Guide](CONTRIBUTING.md).
+
+TODO
+----
+
+### Features ###
+
+- [ ] Dynamic shell completion of connector names.
+- [ ] Other output/input support: ASCII tables, Java properties.
+- [ ] TLS/SSL?
+- [ ] Logging?
+
+### Enhancements ###
+
+- [ ] Do something useful in known error conditions, like 409 for restart
+  during rebalance.
+- [ ] Output compact JSON when stdout is not a TTY, with an option to force.
+  Mimic jq's options.
+- [ ] More efficient byte stream de/encoding than unmarshaling JSON and then
+  marshaling again to print it?
+- [ ] Consider testing the CLI with Gomega's gexec features.
+
+### Meta ###
+
+- [ ] Decide and document versioning scheme. Might be best to version CLI
+  separately.
+- [] Use gopkg.in for the library's sake?
+- [ ] Publish checksums/sigs for releases, document `gpg --verify` steps.
+- [ ] Write the package documentation in `version.go` or `doc.go`.
+- [ ] Add some examples for library usage.
+- [ ] Drop vendored dependency sources when Glide merges gps solver.
+- [ ] Follow [dropping protobuf test dependency from
+  Gomega](https://github.com/onsi/gomega/issues/123)
 
 
 [Kafka Connect]: http://docs.confluent.io/current/connect/intro.html
