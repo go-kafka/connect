@@ -15,7 +15,12 @@ install:
 # TODO: see https://onsi.github.io/ginkgo/#ginkgo-and-continuous-integration
 # Maybe separate `make ci` tasks that does random order, coverage, etc.
 script:
-  - make lint test
+  - make lint coverage
+
+after_success:
+  - |
+    bash <(curl -s https://codecov.io/bash) -f connect.coverprofile || \
+        echo "Codecov did not collect coverage reports"
 
 # Container-based infra for builds that start faster.
 sudo: false

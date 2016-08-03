@@ -15,7 +15,7 @@ test: build
 
 # TODO: tests and coverage for CLI
 coverage: build
-	ginkgo --cover $(packages)
+	ginkgo --cover $(packages) --covermode count
 	$(GO) tool cover --func connect.coverprofile
 
 browse-coverage: coverage
