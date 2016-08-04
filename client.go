@@ -3,7 +3,7 @@ package connect
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -94,7 +94,7 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 
 	if response.StatusCode >= 400 {
 		// TODO: parse APIError, implement Error() and return using the message
-		return response, errors.New("kafka-connect: HTTP error " + response.Status + " on " + req.URL.String())
+		return response, fmt.Errorf("HTTP error %v on %v", response.Status, req.URL)
 	}
 
 	if v != nil {

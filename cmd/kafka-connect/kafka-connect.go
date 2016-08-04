@@ -16,7 +16,7 @@ var (
 	//-------------------------------------------------------------------------
 
 	app = kingpin.New("kafka-connect", "Command line utility for managing Kafka Connect.").
-		Version(connect.VERSION).
+		Version("kafka-connect CLI " + connect.VERSION).
 		Author("Ches Martin")
 
 	// debug = app.Flag("debug", "Enable debug mode.").Envar("KAFKA_CONNECT_CLI_DEBUG").Bool()
@@ -57,16 +57,25 @@ var (
 )
 
 func main() {
-	// Localize use of os.Exit because it doesn't run deferreds
-	if err := run(); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+	app.HelpFlag.Short('h')
+
+	argv := os.Args[1:]
+	subcommand, err := app.Parse(argv)
+
+	if err != nil {
+		context, _ := app.ParseContext(argv)
+		app.FatalUsageContext(context, err.Error())
 	}
+
+	if !(*host).IsAbs() {
+		app.Fatalf("host %v is not a valid absolute URL", *host)
+	}
+
+	// Localize use of os.Exit because it doesn't run deferreds
+	app.FatalIfError(run(subcommand), "")
 }
 
-func run() error {
-	subcommand := kingpin.MustParse(app.Parse(os.Args[1:]))
-
+func run(subcommand string) error {
 	client := connect.NewClient(nil)
 	var apiResult interface{}
 	var err error
