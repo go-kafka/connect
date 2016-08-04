@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -84,7 +85,7 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*http.Reques
 
 // Do sends an API request and returns the API response. The API response is
 // JSON-decoded and stored in the value pointed to by v, or returned as an
-// error if an API error has occurred.
+// error if an API or HTTP error has occurred.
 func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	response, err := c.client.Do(req)
 	if err != nil {
@@ -93,8 +94,7 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode >= 400 {
-		// TODO: parse APIError, implement Error() and return using the message
-		return response, fmt.Errorf("HTTP error %v on %v", response.Status, req.URL)
+		return response, buildError(req, response)
 	}
 
 	if v != nil {
@@ -105,4 +105,19 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	}
 
 	return response, err
+}
+
+func buildError(req *http.Request, resp *http.Response) error {
+	apiError := &APIError{Response: resp}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err == nil && data != nil {
+		json.Unmarshal(data, apiError)
+	}
+
+	// Possibly a general HTTP error, e.g. we're not even talking to a valid
+	// Kafka Connect API host
+	if apiError.Code == 0 {
+		return fmt.Errorf("HTTP %v on %v %v", resp.Status, req.Method, req.URL)
+	}
+	return apiError
 }
