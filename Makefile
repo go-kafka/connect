@@ -5,12 +5,12 @@ GO := go
 packages := . ./cmd/...
 
 build:
-	$(GO) build
+	$(GO) build $(packages)
 
-install: build
+install:
 	$(GO) install $(packages)
 
-test: build
+test:
 	ginkgo -v $(packages)
 
 # TODO: tests and coverage for CLI
