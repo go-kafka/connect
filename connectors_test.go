@@ -66,7 +66,7 @@ var _ = Describe("Connectors", func() {
 	})
 
 	Describe("GetConnector", func() {
-		var resultConnector *Connector
+		var resultConnector interface{}
 		var statusCode int
 
 		BeforeEach(func() {
@@ -98,13 +98,19 @@ var _ = Describe("Connectors", func() {
 		})
 
 		Context("when nonexisting connector name is given", func() {
+			apiError := &APIError{
+				Code:    404,
+				Message: "Connector local-file-source not found",
+			}
+
 			BeforeEach(func() {
 				statusCode = http.StatusNotFound
+				resultConnector = apiError
 			})
 
 			It("returns an error response", func() {
 				connector, resp, err := client.GetConnector("local-file-source")
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(apiError))
 				Expect(*connector).To(BeZero())
 				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 			})
