@@ -157,10 +157,5 @@ func (c *Client) get(path string, v interface{}) (*http.Response, error) {
 		return nil, err
 	}
 
-	response, err := c.Do(request, v)
-	if err != nil {
-		return response, err
-	}
-
-	return response, err
+	return c.Do(request, v)
 }
