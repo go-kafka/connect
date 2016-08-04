@@ -93,7 +93,14 @@ func run(subcommand string) error {
 		connect.UpdateConnectorConfig(*updateName, connect.ConnectorConfig{})
 
 	case deleteCmd.FullCommand():
-		connect.DeleteConnector(*deleteName)
+		_, err = client.DeleteConnector(*deleteName)
+
+		// We can let error fall through to be printed below.
+		// TODO: verify error output of 409 Conflict
+		if err == nil {
+			fmt.Printf("Deleted connector %v.\n", *deleteName)
+			return nil
+		}
 
 	case showCmd.FullCommand():
 		apiResult, _, err = client.GetConnector(*showName)

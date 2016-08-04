@@ -143,16 +143,21 @@ func UpdateConnectorConfig(name string, config ConnectorConfig) (Connector, erro
 // and deleting its configuration. Returns whether deletion was successful or
 // not.
 //
-// TODO: return error instead, forwarding HTTP error?
-//
 // See: http://docs.confluent.io/current/connect/userguide.html#delete--connectors-(string-name)-
-func DeleteConnector(name string) bool {
-	log.Println("Called DeleteConnector")
-	return true
+func (c *Client) DeleteConnector(name string) (*http.Response, error) {
+	return c.delete(fmt.Sprintf("connectors/%v", name))
 }
 
 func (c *Client) get(path string, v interface{}) (*http.Response, error) {
-	request, err := c.NewRequest("GET", path, nil)
+	return c.doRequest("GET", path, nil, v)
+}
+
+func (c *Client) delete(path string) (*http.Response, error) {
+	return c.doRequest("DELETE", path, nil, nil)
+}
+
+func (c *Client) doRequest(method, path string, body, v interface{}) (*http.Response, error) {
+	request, err := c.NewRequest(method, path, body)
 	if err != nil {
 		return nil, err
 	}

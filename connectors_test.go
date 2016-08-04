@@ -265,14 +265,52 @@ var _ = Describe("Connectors", func() {
 	})
 
 	Describe("DeleteConnector", func() {
-		It("deletes a connector instance by name", func() {
-			deleted := DeleteConnector("test")
-			Expect(deleted).To(BeTrue())
+		var statusCode int
+
+		BeforeEach(func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("DELETE", "/connectors/local-file-source"),
+					ghttp.VerifyHeader(jsonAcceptHeader),
+					ghttp.RespondWithPtr(&statusCode, nil),
+				),
+			)
 		})
 
-		PIt("returns false given an nonexistent connector name", func() {
-			deleted := DeleteConnector("invalid")
-			Expect(deleted).To(BeFalse())
+		Context("when existing connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusNoContent
+			})
+
+			It("deletes connector", func() {
+				resp, err := client.DeleteConnector("local-file-source")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
+			})
+
+			Context("when rebalance is in process", func() {
+				BeforeEach(func() {
+					statusCode = http.StatusConflict
+				})
+
+				It("returns error with a conflict response", func() {
+					resp, err := client.DeleteConnector("local-file-source")
+					Expect(err).To(HaveOccurred())
+					Expect(resp.StatusCode).To(Equal(http.StatusConflict))
+				})
+			})
+		})
+
+		Context("when nonexisting connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusNotFound
+			})
+
+			It("returns error with a not found response", func() {
+				resp, err := client.DeleteConnector("local-file-source")
+				Expect(err).To(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+			})
 		})
 	})
 })
