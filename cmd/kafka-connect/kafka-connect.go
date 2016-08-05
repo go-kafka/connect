@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -16,61 +17,66 @@ import (
 type connectorAction func(name string) (*http.Response, error)
 
 var (
-	//-------------------------------------------------------------------------
-	// CLI Commands, Args, Flags with Kingpin
-	//-------------------------------------------------------------------------
+	host     *url.URL
+	connName string
 
-	app = kingpin.New("kafka-connect", "Command line utility for managing Kafka Connect.").
+	// For matching which execution we dispatch without proliferating strings
+	listCmd, createCmd, updateCmd, deleteCmd *kingpin.CmdClause
+	showCmd, configCmd, tasksCmd, statusCmd  *kingpin.CmdClause
+	pauseCmd, resumeCmd, restartCmd          *kingpin.CmdClause
+)
+
+// The modular style of Kingpin setup might cut down on the non-local vars, but
+// it feels pretty heavy and less declarative, so I'm undecided...
+func buildApp() *kingpin.Application {
+	app := kingpin.New("kafka-connect", "Command line utility for managing Kafka Connect.").
 		Version("kafka-connect CLI " + connect.VERSION).
 		Author("Ches Martin").
 		UsageWriter(os.Stdout)
 
-	// debug = app.Flag("debug", "Enable debug mode.").Envar("KAFKA_CONNECT_CLI_DEBUG").Bool()
+	app.HelpFlag.Short('h')
 
-	host = app.Flag("host", "Host address for the Kafka Connect REST API instance.").
-		Envar("KAFKA_CONNECT_CLI_HOST").Short('H').Default(connect.DefaultHostURL).URL()
+	app.Flag("host", "Host address for the Kafka Connect REST API instance.").
+		Short('H').
+		Default(connect.DefaultHostURL).
+		Envar("KAFKA_CONNECT_CLI_HOST").
+		URLVar(&host)
 
 	listCmd = app.Command("list", "Lists active connectors. Aliased as 'ls'.").Alias("ls")
-
-	// TODO: Take a properties file or JSON for config?
-	createCmd  = app.Command("create", "Creates a new connector instance.")
-	createName = createCmd.Arg("name", "Name of the connector to create.").Required().String()
-
-	// TODO: Take a properties file or JSON for config?
-	updateCmd  = app.Command("update", "Updates a connector.")
-	updateName = updateCmd.Arg("name", "Name of the connector to update.").Required().String()
-
-	deleteCmd  = app.Command("delete", "Deletes a connector. Aliased as 'rm'.").Alias("rm")
-	deleteName = deleteCmd.Arg("name", "Name of the connector to delete.").Required().String()
-
-	showCmd  = app.Command("show", "Shows information about a connector and its tasks.")
-	showName = showCmd.Arg("name", "Name of the connector to look up.").Required().String()
-
-	configCmd  = app.Command("config", "Displays configuration of a connector.")
-	configName = configCmd.Arg("name", "Name of the connector to look up.").Required().String()
-
-	tasksCmd  = app.Command("tasks", "Displays tasks currently running for a connector.")
-	tasksName = tasksCmd.Arg("name", "Name of the connector to look up.").Required().String()
-
-	statusCmd  = app.Command("status", "Gets current status of a connector.")
-	statusName = statusCmd.Arg("name", "Name of the connector to look up.").Required().String()
-
-	pauseCmd  = app.Command("pause", "Pause a connector and its tasks.")
-	pauseName = pauseCmd.Arg("name", "Name of the connector to pause.").Required().String()
-
-	resumeCmd  = app.Command("resume", "Resume a paused connector.")
-	resumeName = resumeCmd.Arg("name", "Name of the connector to resume.").Required().String()
-
-	restartCmd  = app.Command("restart", "Restart a connector and its tasks.")
-	restartName = restartCmd.Arg("name", "Name of the connector to restart.").Required().String()
+	createCmd = app.Command("create", "Creates a new connector instance.")
+	updateCmd = app.Command("update", "Updates a connector.")
+	deleteCmd = app.Command("delete", "Deletes a connector. Aliased as 'rm'.").Alias("rm")
+	showCmd = app.Command("show", "Shows information about a connector and its tasks.")
+	configCmd = app.Command("config", "Displays configuration of a connector.")
+	tasksCmd = app.Command("tasks", "Displays tasks currently running for a connector.")
+	statusCmd = app.Command("status", "Gets current status of a connector.")
+	pauseCmd = app.Command("pause", "Pause a connector and its tasks.")
+	resumeCmd = app.Command("resume", "Resume a paused connector.")
+	restartCmd = app.Command("restart", "Restart a connector and its tasks.")
 
 	// TODO: New stuff
 	// plugin subcommand: list (default), validate
-)
+
+	// Most commands need a connector name, reduce the boilerplate.
+	hintedByName := []string{"create", "update", "delete", "show", "pause", "resume", "restart"}
+	for _, name := range hintedByName {
+		addConnectorNameArg(app, name, name)
+	}
+	for _, name := range []string{"config", "tasks", "status"} {
+		addConnectorNameArg(app, name, "look up")
+	}
+
+	return app
+}
+
+func addConnectorNameArg(app *kingpin.Application, cmdName, hint string) {
+	command := app.GetCommand(cmdName)
+	desc := fmt.Sprintf("Name of the connector to %v.", hint)
+	command.Arg("name", desc).Required().StringVar(&connName)
+}
 
 func main() {
-	app.HelpFlag.Short('h')
-
+	app := buildApp()
 	argv := os.Args[1:]
 	subcommand, err := app.Parse(argv)
 
@@ -101,36 +107,36 @@ func run(subcommand string) error {
 		apiResult, _, err = client.ListConnectors()
 
 	case createCmd.FullCommand():
-		connect.CreateConnector(connect.Connector{Name: *createName})
+		connect.CreateConnector(connect.Connector{Name: connName})
 
 	case updateCmd.FullCommand():
-		connect.UpdateConnectorConfig(*updateName, connect.ConnectorConfig{})
+		connect.UpdateConnectorConfig(connName, connect.ConnectorConfig{})
 
 	case deleteCmd.FullCommand():
 		// TODO: verify error output of 409 Conflict
-		return affectConnector(*deleteName, client.DeleteConnector, "Deleted")
+		return affectConnector(connName, client.DeleteConnector, "Deleted")
 
 	case showCmd.FullCommand():
-		apiResult, _, err = client.GetConnector(*showName)
+		apiResult, _, err = client.GetConnector(connName)
 
 	case configCmd.FullCommand():
-		apiResult, _, err = client.GetConnectorConfig(*configName)
+		apiResult, _, err = client.GetConnectorConfig(connName)
 
 	case tasksCmd.FullCommand():
-		apiResult, _, err = client.GetConnectorTasks(*tasksName)
+		apiResult, _, err = client.GetConnectorTasks(connName)
 
 	case statusCmd.FullCommand():
-		apiResult, _, err = client.GetConnectorStatus(*statusName)
+		apiResult, _, err = client.GetConnectorStatus(connName)
 
 	case pauseCmd.FullCommand():
-		return affectConnector(*pauseName, client.PauseConnector, "Paused")
+		return affectConnector(connName, client.PauseConnector, "Paused")
 
 	case resumeCmd.FullCommand():
-		return affectConnector(*resumeName, client.ResumeConnector, "Resumed")
+		return affectConnector(connName, client.ResumeConnector, "Resumed")
 
 	case restartCmd.FullCommand():
 		// TODO: verify error output of 409 Conflict
-		return affectConnector(*restartName, client.RestartConnector, "Restarted")
+		return affectConnector(connName, client.RestartConnector, "Restarted")
 	}
 
 	if err != nil {
