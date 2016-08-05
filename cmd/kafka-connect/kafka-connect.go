@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -27,7 +28,7 @@ var (
 	// debug = app.Flag("debug", "Enable debug mode.").Envar("KAFKA_CONNECT_CLI_DEBUG").Bool()
 
 	host = app.Flag("host", "Host address for the Kafka Connect REST API instance.").
-		Envar("KAFKA_CONNECT_CLI_HOST").Short('H').Default(connect.DefaultHostURL).String()
+		Envar("KAFKA_CONNECT_CLI_HOST").Short('H').Default(connect.DefaultHostURL).URL()
 
 	listCmd = app.Command("list", "Lists active connectors. Aliased as 'ls'.").Alias("ls")
 
@@ -78,8 +79,10 @@ func main() {
 		app.FatalUsageContext(context, err.Error())
 	}
 
+	// TODO: use kingpin Validate, but it's currently difficult to use:
+	// https://github.com/alecthomas/kingpin/issues/125
 	if !(*host).IsAbs() {
-		app.Fatalf("host %v is not a valid absolute URL", *host)
+		app.Fatalf("host %v is not a valid absolute URL", (*host).String())
 	}
 
 	// Localize use of os.Exit because it doesn't run deferreds
