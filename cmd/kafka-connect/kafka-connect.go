@@ -97,36 +97,34 @@ func main() {
 
 func run(subcommand string) error {
 	client := connect.NewClient(nil)
-	var apiResult interface{}
-	var err error
-	var output string
 
 	// Dispatch subcommands
 	switch subcommand {
 	case listCmd.FullCommand():
-		apiResult, _, err = client.ListConnectors()
+		return maybePrintAPIResult(client.ListConnectors())
 
 	case createCmd.FullCommand():
-		connect.CreateConnector(connect.Connector{Name: connName})
+		return connect.CreateConnector(connect.Connector{Name: connName})
 
 	case updateCmd.FullCommand():
-		connect.UpdateConnectorConfig(connName, connect.ConnectorConfig{})
+		_, err := connect.UpdateConnectorConfig(connName, connect.ConnectorConfig{})
+		return err
 
 	case deleteCmd.FullCommand():
 		// TODO: verify error output of 409 Conflict
 		return affectConnector(connName, client.DeleteConnector, "Deleted")
 
 	case showCmd.FullCommand():
-		apiResult, _, err = client.GetConnector(connName)
+		return maybePrintAPIResult(client.GetConnector(connName))
 
 	case configCmd.FullCommand():
-		apiResult, _, err = client.GetConnectorConfig(connName)
+		return maybePrintAPIResult(client.GetConnectorConfig(connName))
 
 	case tasksCmd.FullCommand():
-		apiResult, _, err = client.GetConnectorTasks(connName)
+		return maybePrintAPIResult(client.GetConnectorTasks(connName))
 
 	case statusCmd.FullCommand():
-		apiResult, _, err = client.GetConnectorStatus(connName)
+		return maybePrintAPIResult(client.GetConnectorStatus(connName))
 
 	case pauseCmd.FullCommand():
 		return affectConnector(connName, client.PauseConnector, "Paused")
@@ -137,18 +135,22 @@ func run(subcommand string) error {
 	case restartCmd.FullCommand():
 		// TODO: verify error output of 409 Conflict
 		return affectConnector(connName, client.RestartConnector, "Restarted")
-	}
 
+	default: // won't reach here, arg parsing handles unknown commands
+		return fmt.Errorf("Command `%v` is missing implementation!", subcommand)
+	}
+}
+
+func maybePrintAPIResult(data interface{}, resp *http.Response, err error) error {
 	if err != nil {
 		return err
 	}
 
-	if output, err = formatPrettyJSON(apiResult); err != nil {
-		return err
+	if output, err := formatPrettyJSON(data); err == nil {
+		fmt.Println(output)
 	}
 
-	fmt.Println(output)
-	return nil
+	return err
 }
 
 func affectConnector(name string, action connectorAction, desc string) error {
