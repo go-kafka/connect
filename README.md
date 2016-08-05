@@ -25,9 +25,9 @@ The tool is self-documenting: run `kafka-connect help` or `kafka-connect help
     Command line utility for managing Kafka Connect.
 
     Flags:
-          --help     Show context-sensitive help (also try --help-long and --help-man).
+      -h, --help     Show context-sensitive help (also try --help-long and --help-man).
           --version  Show application version.
-      -H, --host="http://localhost:8083/"
+      -H, --host=http://localhost:8083/
                     Host address for the Kafka Connect REST API instance.
 
     Commands:
@@ -57,6 +57,15 @@ The tool is self-documenting: run `kafka-connect help` or `kafka-connect help
 
       status <name>
         Gets current status of a connector.
+
+      pause <name>
+        Pause a connector and its tasks.
+
+      resume <name>
+        Resume a paused connector.
+
+      restart <name>
+        Restart a connector and its tasks.
 
 The process exits with a zero status when operations are successful and
 non-zero in the case of errors.
@@ -174,13 +183,17 @@ See the API documentation linked above for examples.
 Alternatives
 ------------
 
-- <https://github.com/datamountaineer/kafka-connect-tools>
+<https://github.com/datamountaineer/kafka-connect-tools>
 
-  When I wanted a tool like this, I found this one already available. But it's
-  written in Scala—I <3 Scala, but JVM start-up time is sluggish for CLI tools,
-  and it's much easier to distribute self-contained native binaries to
-  management hosts that don't require a JVM installed. Hence, I wrote this Go
-  variant. Kudos to the kafka-connect-tools authors for inspiration.
+When I wanted a tool like this, I found this one. It's written in Scala—I <3
+Scala, but JVM start-up time is sluggish for CLI tools, and it's much easier to
+distribute self-contained native binaries to management hosts that don't
+require a JVM installed.
+
+Similar things can be said of Kafka's packaged management scripts, which are
+less ergonomic. Hence, I wrote this Go variant.
+
+Kudos to the kafka-connect-tools authors for inspiration.
 
 Contributing
 ------------

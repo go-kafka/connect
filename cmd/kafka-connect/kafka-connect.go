@@ -10,6 +10,10 @@ import (
 	"github.com/go-kafka/connect"
 )
 
+// A connectorAction is a function that performs an imperative action on a
+// Connector by name.
+type connectorAction func(name string) (*http.Response, error)
+
 var (
 	//-------------------------------------------------------------------------
 	// CLI Commands, Args, Flags with Kingpin
@@ -49,11 +53,17 @@ var (
 	statusCmd  = app.Command("status", "Gets current status of a connector.")
 	statusName = statusCmd.Arg("name", "Name of the connector to look up.").Required().String()
 
+	pauseCmd  = app.Command("pause", "Pause a connector and its tasks.")
+	pauseName = pauseCmd.Arg("name", "Name of the connector to pause.").Required().String()
+
+	resumeCmd  = app.Command("resume", "Resume a paused connector.")
+	resumeName = resumeCmd.Arg("name", "Name of the connector to resume.").Required().String()
+
+	restartCmd  = app.Command("restart", "Restart a connector and its tasks.")
+	restartName = restartCmd.Arg("name", "Name of the connector to restart.").Required().String()
+
 	// TODO: New stuff
-	// pause
-	// resume
-	// restart
-	// plugins
+	// plugin subcommand: list (default), validate
 )
 
 func main() {
@@ -93,14 +103,8 @@ func run(subcommand string) error {
 		connect.UpdateConnectorConfig(*updateName, connect.ConnectorConfig{})
 
 	case deleteCmd.FullCommand():
-		_, err = client.DeleteConnector(*deleteName)
-
-		// We can let error fall through to be printed below.
 		// TODO: verify error output of 409 Conflict
-		if err == nil {
-			fmt.Printf("Deleted connector %v.\n", *deleteName)
-			return nil
-		}
+		return affectConnector(*deleteName, client.DeleteConnector, "Deleted")
 
 	case showCmd.FullCommand():
 		apiResult, _, err = client.GetConnector(*showName)
@@ -113,6 +117,16 @@ func run(subcommand string) error {
 
 	case statusCmd.FullCommand():
 		apiResult, _, err = client.GetConnectorStatus(*statusName)
+
+	case pauseCmd.FullCommand():
+		return affectConnector(*pauseName, client.PauseConnector, "Paused")
+
+	case resumeCmd.FullCommand():
+		return affectConnector(*resumeName, client.ResumeConnector, "Resumed")
+
+	case restartCmd.FullCommand():
+		// TODO: verify error output of 409 Conflict
+		return affectConnector(*restartName, client.RestartConnector, "Restarted")
 	}
 
 	if err != nil {
@@ -125,6 +139,15 @@ func run(subcommand string) error {
 
 	fmt.Println(output)
 	return nil
+}
+
+func affectConnector(name string, action connectorAction, desc string) error {
+	_, err := action(name)
+	if err == nil {
+		fmt.Printf("%v connector %v.\n", desc, name)
+	}
+
+	return err
 }
 
 // TODO: Some kind of formatter abstraction

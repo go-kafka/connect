@@ -145,7 +145,34 @@ func UpdateConnectorConfig(name string, config ConnectorConfig) (Connector, erro
 //
 // See: http://docs.confluent.io/current/connect/userguide.html#delete--connectors-(string-name)-
 func (c *Client) DeleteConnector(name string) (*http.Response, error) {
-	return c.delete(fmt.Sprintf("connectors/%v", name))
+	return c.delete("connectors/" + name)
+}
+
+// PauseConnector pauses a connector and its tasks, which stops message
+// processing until the connector is resumed. Tasks will transition to PAUSED
+// state asynchronously.
+//
+// See: http://docs.confluent.io/current/connect/userguide.html#put--connectors-(string-name)-pause
+func (c *Client) PauseConnector(name string) (*http.Response, error) {
+	path := fmt.Sprintf("connectors/%v/pause", name)
+	return c.doRequest("PUT", path, nil, nil)
+}
+
+// ResumeConnector resumes a paused connector. Tasks will transition to RUNNING
+// state asynchronously.
+//
+// See: http://docs.confluent.io/current/connect/userguide.html#put--connectors-(string-name)-resume
+func (c *Client) ResumeConnector(name string) (*http.Response, error) {
+	path := fmt.Sprintf("connectors/%v/resume", name)
+	return c.doRequest("PUT", path, nil, nil)
+}
+
+// RestartConnector restarts a connector and its tasks.
+//
+// See http://docs.confluent.io/current/connect/userguide.html#post--connectors-(string-name)-restart
+func (c *Client) RestartConnector(name string) (*http.Response, error) {
+	path := fmt.Sprintf("connectors/%v/restart", name)
+	return c.doRequest("POST", path, nil, nil)
 }
 
 func (c *Client) get(path string, v interface{}) (*http.Response, error) {

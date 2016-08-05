@@ -11,20 +11,14 @@ import (
 	. "github.com/go-kafka/connect"
 )
 
-var _ = Describe("Connectors", func() {
-	var client *Client
-	var server *ghttp.Server
+var (
+	client *Client
+	server *ghttp.Server
 
-	jsonAcceptHeader := http.Header{"Accept": []string{"application/json"}}
+	jsonAcceptHeader = http.Header{"Accept": []string{"application/json"}}
+)
 
-	fileSourceConfig := ConnectorConfig{
-		"connector.class": "FileStreamSource",
-		"file":            "/tmp/test.txt",
-		"name":            "local-file-source",
-		"tasks.max":       "1",
-		"topic":           "go-kafka-connect-test",
-	}
-
+var _ = Describe("Connector CRUD", func() {
 	BeforeEach(func() {
 		server = ghttp.NewServer()
 		url, _ := url.Parse(server.URL())
@@ -35,6 +29,14 @@ var _ = Describe("Connectors", func() {
 	AfterEach(func() {
 		server.Close()
 	})
+
+	fileSourceConfig := ConnectorConfig{
+		"connector.class": "FileStreamSource",
+		"file":            "/tmp/test.txt",
+		"name":            "local-file-source",
+		"tasks.max":       "1",
+		"topic":           "go-kafka-connect-test",
+	}
 
 	Describe("CreateConnector", func() {
 		It("creates a new instance given a valid Connector", func() {
@@ -316,6 +318,146 @@ var _ = Describe("Connectors", func() {
 				resp, err := client.DeleteConnector("local-file-source")
 				Expect(err).To(HaveOccurred())
 				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+			})
+		})
+	})
+})
+
+var _ = Describe("Connector Lifecycle", func() {
+	BeforeEach(func() {
+		server = ghttp.NewServer()
+		url, _ := url.Parse(server.URL())
+		client = NewClient(nil)
+		client.BaseURL = url
+	})
+
+	AfterEach(func() {
+		server.Close()
+	})
+
+	Describe("PauseConnector", func() {
+		var statusCode int
+
+		BeforeEach(func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("PUT", "/connectors/local-file-source/pause"),
+					ghttp.VerifyHeader(jsonAcceptHeader),
+					ghttp.RespondWithPtr(&statusCode, nil),
+				),
+			)
+		})
+
+		Context("when existing connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusAccepted
+			})
+
+			It("pauses connector", func() {
+				resp, err := client.PauseConnector("local-file-source")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			})
+		})
+
+		Context("when nonexisting connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusNotFound
+			})
+
+			It("returns error with a not found response", func() {
+				resp, err := client.PauseConnector("local-file-source")
+				Expect(err).To(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+			})
+		})
+	})
+
+	Describe("ResumeConnector", func() {
+		var statusCode int
+
+		BeforeEach(func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("PUT", "/connectors/local-file-source/resume"),
+					ghttp.VerifyHeader(jsonAcceptHeader),
+					ghttp.RespondWithPtr(&statusCode, nil),
+				),
+			)
+		})
+
+		Context("when existing connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusAccepted
+			})
+
+			It("resumes connector", func() {
+				resp, err := client.ResumeConnector("local-file-source")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			})
+		})
+
+		Context("when nonexisting connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusNotFound
+			})
+
+			It("returns error with a not found response", func() {
+				resp, err := client.ResumeConnector("local-file-source")
+				Expect(err).To(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+			})
+		})
+	})
+
+	Describe("RestartConnector", func() {
+		var statusCode int
+
+		BeforeEach(func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("POST", "/connectors/local-file-source/restart"),
+					ghttp.VerifyHeader(jsonAcceptHeader),
+					ghttp.RespondWithPtr(&statusCode, nil),
+				),
+			)
+		})
+
+		Context("when existing connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusOK
+			})
+
+			It("restarts connector", func() {
+				resp, err := client.RestartConnector("local-file-source")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			})
+
+			Context("when rebalance is in process", func() {
+				BeforeEach(func() {
+					statusCode = http.StatusConflict
+				})
+
+				It("returns error with a conflict response", func() {
+					resp, err := client.RestartConnector("local-file-source")
+					Expect(err).To(HaveOccurred())
+					Expect(resp.StatusCode).To(Equal(http.StatusConflict))
+				})
+			})
+		})
+
+		Context("when nonexisting connector name is given", func() {
+			BeforeEach(func() {
+				// The API actually throws a 500 on POST to nonexistent
+				statusCode = http.StatusInternalServerError
+			})
+
+			It("returns error with a server error response", func() {
+				resp, err := client.RestartConnector("local-file-source")
+				Expect(err).To(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
 			})
 		})
 	})
