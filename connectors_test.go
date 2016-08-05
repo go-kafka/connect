@@ -75,7 +75,7 @@ var _ = Describe("Connector CRUD", func() {
 			resultConnector = &Connector{
 				Name:   "local-file-source",
 				Config: fileSourceConfig,
-				Tasks:  []TaskID{TaskID{"local-file-source", 0}},
+				Tasks:  []TaskID{{"local-file-source", 0}},
 			}
 
 			server.AppendHandlers(
@@ -164,7 +164,7 @@ var _ = Describe("Connector CRUD", func() {
 
 		BeforeEach(func() {
 			resultTasks = []Task{
-				Task{
+				{
 					ID: TaskID{"local-file-source", 0},
 					Config: map[string]string{
 						"file":       "/tmp/test.txt",
@@ -221,7 +221,7 @@ var _ = Describe("Connector CRUD", func() {
 					WorkerID: "127.0.0.1:8083",
 				},
 				Tasks: []TaskState{
-					TaskState{
+					{
 						ID:       0,
 						State:    "RUNNING",
 						WorkerID: "127.0.0.1:8083",

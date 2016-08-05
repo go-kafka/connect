@@ -3,6 +3,7 @@ Kafka Connect CLI
 
 [![Build Status][travis-badge]][build status]
 [![Coverage Status][coverage-badge]][coverage status]
+[![Go Report Card][go-report-badge]][go report card]
 [![GoDoc][godoc-badge]][godoc]
 
 A fast, portable, self-documenting CLI tool to inspect and manage [Kafka
@@ -246,6 +247,8 @@ TODO
 [build status]: https://travis-ci.org/go-kafka/connect
 [coverage-badge]: https://codecov.io/gh/go-kafka/connect/branch/master/graph/badge.svg
 [coverage status]: https://codecov.io/gh/go-kafka/connect
+[go-report-badge]: https://goreportcard.com/badge/github.com/go-kafka/connect
+[go report card]: https://goreportcard.com/report/github.com/go-kafka/connect
 [godoc-badge]: http://img.shields.io/badge/godoc-reference-blue.svg?style=flat
 [godoc]: https://godoc.org/github.com/go-kafka/connect
 
