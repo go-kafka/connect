@@ -21,7 +21,8 @@ var (
 
 	app = kingpin.New("kafka-connect", "Command line utility for managing Kafka Connect.").
 		Version("kafka-connect CLI " + connect.VERSION).
-		Author("Ches Martin")
+		Author("Ches Martin").
+		UsageWriter(os.Stdout)
 
 	// debug = app.Flag("debug", "Enable debug mode.").Envar("KAFKA_CONNECT_CLI_DEBUG").Bool()
 
