@@ -219,7 +219,7 @@ TODO
   Mimic jq's options.
 - [ ] More efficient byte stream de/encoding than unmarshaling JSON and then
   marshaling again to print it?
-- [ ] Consider testing the CLI with Gomega's gexec features.
+- [x] Consider testing the CLI with Gomega's gexec features.
 
 ### Meta ###
 
