@@ -9,5 +9,5 @@ import (
 
 func TestConnect(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Kafka Connect Suite")
+	RunSpecs(t, "go-kafka/connect Library Suite")
 }

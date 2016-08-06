@@ -10,10 +10,15 @@ build:
 install:
 	$(GO) install $(packages)
 
+# Ugh, ginkgo executable doesn't implement package spec correctly for ./cmd/...
+# https://github.com/onsi/ginkgo/issues/278
 test:
-	ginkgo -v $(packages)
+	$(GO) test $(packages)
 
-# TODO: tests and coverage for CLI
+spec:
+	ginkgo -r -v
+
+# TODO: coverage for CLI? https://github.com/onsi/ginkgo/issues/89
 coverage:
 	ginkgo --cover $(packages) --covermode count
 	$(GO) tool cover --func connect.coverprofile
