@@ -58,21 +58,21 @@ func buildApp() *kingpin.Application {
 	// plugin subcommand: list (default), validate
 
 	// Most commands need a connector name, reduce the boilerplate.
+	addConnectorNameArg := func(cmdName, hint string) {
+		command := app.GetCommand(cmdName)
+		desc := fmt.Sprintf("Name of the connector to %v.", hint)
+		command.Arg("name", desc).Required().StringVar(&connName)
+	}
+
 	hintedByName := []string{"create", "update", "delete", "show", "pause", "resume", "restart"}
 	for _, name := range hintedByName {
-		addConnectorNameArg(app, name, name)
+		addConnectorNameArg(name, name)
 	}
 	for _, name := range []string{"config", "tasks", "status"} {
-		addConnectorNameArg(app, name, "look up")
+		addConnectorNameArg(name, "look up")
 	}
 
 	return app
-}
-
-func addConnectorNameArg(app *kingpin.Application, cmdName, hint string) {
-	command := app.GetCommand(cmdName)
-	desc := fmt.Sprintf("Name of the connector to %v.", hint)
-	command.Arg("name", desc).Required().StringVar(&connName)
 }
 
 func main() {
