@@ -113,10 +113,10 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 }
 
 func buildError(req *http.Request, resp *http.Response) error {
-	apiError := &APIError{Response: resp}
+	apiError := APIError{Response: resp}
 	data, err := ioutil.ReadAll(resp.Body)
 	if err == nil && data != nil {
-		json.Unmarshal(data, apiError)
+		json.Unmarshal(data, &apiError)
 	}
 
 	// Possibly a general HTTP error, e.g. we're not even talking to a valid

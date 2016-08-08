@@ -177,7 +177,7 @@ var _ = Describe("Connector CRUD", func() {
 
 			It("returns an error response", func() {
 				connector, resp, err := client.GetConnector("local-file-source")
-				Expect(err).To(MatchError(err.(*APIError)))
+				Expect(err).To(MatchError(err.(APIError)))
 				Expect(*connector).To(BeZero())
 				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 			})
