@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -107,7 +108,7 @@ func run(subcommand string) error {
 		return maybePrintAPIResult(client.ListConnectors())
 
 	case createCmd.FullCommand():
-		return connect.CreateConnector(connect.Connector{Name: connName})
+		return errors.New("Sorry, create is not yet implemented")
 
 	case updateCmd.FullCommand():
 		_, err := connect.UpdateConnectorConfig(connName, connect.ConnectorConfig{})
