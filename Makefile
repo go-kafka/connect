@@ -19,7 +19,7 @@ spec:
 
 # TODO: coverage for CLI? https://github.com/onsi/ginkgo/issues/89
 coverage:
-	ginkgo --cover $(packages) --covermode count
+	$(GO) test --covermode count --coverprofile connect.coverprofile .
 	$(GO) tool cover --func connect.coverprofile
 
 browse-coverage: coverage
