@@ -137,7 +137,7 @@ var _ = Describe("Connector CRUD", func() {
 		var statusCode int
 
 		BeforeEach(func() {
-			resultConnector = &Connector{
+			resultConnector = Connector{
 				Name:   "local-file-source",
 				Config: fileSourceConfig,
 				Tasks:  []TaskID{{"local-file-source", 0}},
@@ -160,12 +160,12 @@ var _ = Describe("Connector CRUD", func() {
 			It("returns a connector", func() {
 				connector, _, err := client.GetConnector("local-file-source")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(connector).To(Equal(resultConnector))
+				Expect(*connector).To(Equal(resultConnector.(Connector)))
 			})
 		})
 
 		Context("when nonexisting connector name is given", func() {
-			apiError := &APIError{
+			apiError := APIError{
 				Code:    404,
 				Message: "Connector local-file-source not found",
 			}
@@ -177,7 +177,7 @@ var _ = Describe("Connector CRUD", func() {
 
 			It("returns an error response", func() {
 				connector, resp, err := client.GetConnector("local-file-source")
-				Expect(err).To(MatchError(apiError))
+				Expect(err).To(MatchError(err.(*APIError)))
 				Expect(*connector).To(BeZero())
 				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 			})
@@ -253,7 +253,7 @@ var _ = Describe("Connector CRUD", func() {
 				statusCode = http.StatusOK
 			})
 
-			It("returns tasks for an extant connector", func() {
+			It("returns tasks", func() {
 				tasks, _, err := client.GetConnectorTasks("local-file-source")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(tasks).To(Equal(resultTasks))
