@@ -10,8 +10,7 @@ build:
 install:
 	$(GO) install $(packages)
 
-# Ugh, ginkgo executable doesn't implement package spec correctly for ./cmd/...
-# https://github.com/onsi/ginkgo/issues/278
+# Re: ginkgo, https://github.com/onsi/ginkgo/issues/278
 test:
 	$(GO) test $(packages)
 
@@ -39,11 +38,9 @@ zen:
 
 get-devtools:
 	@echo Getting golint...
-	$(GO) get -u -v github.com/golang/lint/golint
-	@echo Getting the Ginkgo test runner...
-	$(GO) get -u -v github.com/onsi/ginkgo/ginkgo
+	$(GO) get -u github.com/golang/lint/golint
 	@echo Getting errcheck...
-	$(GO) get -u -v github.com/kisielk/errcheck
+	$(GO) get -u github.com/kisielk/errcheck
 
 clean:
 	$(RM) *.coverprofile

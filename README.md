@@ -158,12 +158,14 @@ kafka-connect: ELF 32-bit LSB executable, ARM, version 1 (SYSV), statically link
 #### Testing with Ginkgo ####
 
 This project uses the [Ginkgo] BDD testing library. You can run the tests
-normally with `go test`, but Ginkgo also has its own CLI tool [with additional
-options][ginkgo cli] for running tests, watching for file changes, generating
-stub test files, etc. This tool is not included in `vendor/`, in part because
-[Glide doesn't support that yet][glide execs], so if you'd like to use it
-you'll need to `go install github.com/onsi/ginkgo/ginkgo` to install it on your
-regular `GOPATH`. For convenience there is also a `make get-devtools` task.
+normally with `go test` or `make test`. If you wish to use additional features
+of [the Ginkgo CLI tool][ginkgo cli] like `watch` mode or generating stub test
+files, etc. you'll need to install it on your regular `GOPATH` using:
+
+    $ go install github.com/onsi/ginkgo/ginkgo
+
+This tool is not included in `vendor/`, in part because [Glide doesn't support
+that yet][glide execs], and also because it's optional.
 
 ### Using the Go Library ###
 
