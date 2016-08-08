@@ -30,6 +30,8 @@ browse-coverage: coverage
 lint:
 	$(foreach pkg, $(packages), golint --set_exit_status $(pkg);)
 
+# TODO: add to CI after dropping 1.5 support
+# https://github.com/kisielk/errcheck/issues/75
 errcheck:
 	errcheck --asserts --ignore 'io:Close' $(packages)
 
