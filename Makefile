@@ -29,8 +29,10 @@ browse-coverage: coverage
 # golint only takes one package or else it thinks multiple arguments are
 # directories (which it also doesn't support), ./... includes vendor :-/
 lint:
-	golint --set_exit_status . && \
-		golint --set_exit_status ./cmd/...
+	$(foreach pkg, $(packages), golint --set_exit_status $(pkg);)
+
+errcheck:
+	errcheck --asserts --ignore 'io:Close' $(packages)
 
 zen:
 	ginkgo watch -notify $(packages)
@@ -40,6 +42,8 @@ get-devtools:
 	$(GO) get -u -v github.com/golang/lint/golint
 	@echo Getting the Ginkgo test runner...
 	$(GO) get -u -v github.com/onsi/ginkgo/ginkgo
+	@echo Getting errcheck...
+	$(GO) get -u -v github.com/kisielk/errcheck
 
 clean:
 	$(RM) *.coverprofile
@@ -52,5 +56,6 @@ clean-vendor:
 distclean: clean
 	$(GO) clean -i github.com/go-kafka/connect...
 
-.PHONY: build install test coverage browse-coverage lint zen get-devtools
+.PHONY: build install test spec coverage browse-coverage
+.PHONY: lint errcheck zen get-devtools
 .PHONY: clean clean-vendor distclean

@@ -116,7 +116,7 @@ func buildError(req *http.Request, resp *http.Response) error {
 	apiError := APIError{Response: resp}
 	data, err := ioutil.ReadAll(resp.Body)
 	if err == nil && data != nil {
-		json.Unmarshal(data, &apiError)
+		_ = json.Unmarshal(data, &apiError) // Fall back on general error below
 	}
 
 	// Possibly a general HTTP error, e.g. we're not even talking to a valid

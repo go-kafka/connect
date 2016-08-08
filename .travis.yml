@@ -15,7 +15,7 @@ install:
 # TODO: see https://onsi.github.io/ginkgo/#ginkgo-and-continuous-integration
 # Maybe separate `make ci` tasks that does random order, coverage, etc.
 script:
-  - make lint coverage
+  - make lint errcheck coverage
 
 after_success:
   - |
