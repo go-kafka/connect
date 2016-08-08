@@ -15,7 +15,8 @@ var (
 	client *Client
 	server *ghttp.Server
 
-	jsonAcceptHeader = http.Header{"Accept": []string{"application/json"}}
+	jsonAcceptHeader  = http.Header{"Accept": []string{"application/json"}}
+	jsonContentHeader = http.Header{"Content-Type": []string{"application/json"}}
 )
 
 var _ = Describe("Connector CRUD", func() {
@@ -39,13 +40,77 @@ var _ = Describe("Connector CRUD", func() {
 	}
 
 	Describe("CreateConnector", func() {
-		It("creates a new instance given a valid Connector", func() {
-			connector := Connector{Name: "test"}
-			err := CreateConnector(connector)
-			Expect(err).NotTo(HaveOccurred())
+		var connector, resultConnector Connector
+		var statusCode int
+
+		BeforeEach(func() {
+			connector = Connector{
+				Name:   "local-file-source",
+				Config: fileSourceConfig,
+			}
+
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("POST", "/connectors"),
+					ghttp.VerifyHeader(jsonContentHeader),
+					ghttp.VerifyHeader(jsonAcceptHeader),
+					ghttp.VerifyJSONRepresenting(connector),
+					ghttp.RespondWithJSONEncodedPtr(&statusCode, &resultConnector),
+				),
+			)
 		})
 
-		PIt("returns an error given an invalid Connector", func() {
+		Context("when a valid Connector is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusCreated
+				resultConnector = connector
+				resultConnector.Tasks = []TaskID{{"local-file-source", 0}}
+				Expect(connector).NotTo(Equal(resultConnector))
+			})
+
+			It("updates reference with state of newly-created instance", func() {
+				_, err := client.CreateConnector(&connector)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(connector).To(Equal(resultConnector))
+			})
+		})
+
+		// The API ought to return a 422 but it currently returns 500 instead
+		// (and the response is text/html despite Accept).
+		// TODO: report this upstream as a bug
+		Context("when an invalid Connector is given", func() {
+			var origConnector Connector
+
+			BeforeEach(func() {
+				statusCode = http.StatusInternalServerError
+				origConnector = connector
+			})
+
+			// TODO: if 422 is returned in the future (see above), assert on
+			// APIError value.
+			It("returns an error", func() {
+				resp, err := client.CreateConnector(&connector)
+				Expect(err).To(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+
+			It("does not mutate Connector reference", func() {
+				_, err := client.CreateConnector(&connector)
+				Expect(err).To(HaveOccurred())
+				Expect(connector).To(Equal(origConnector))
+			})
+		})
+
+		Context("when a Connector with extant Tasks is given", func() {
+			BeforeEach(func() {
+				connector.Tasks = []TaskID{{"local-file-source", 0}}
+			})
+
+			It("returns an error", func() {
+				_, err := client.CreateConnector(&connector)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("Cannot create Connector with existing Tasks"))
+			})
 		})
 	})
 

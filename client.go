@@ -61,6 +61,7 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*http.Reques
 
 	url := c.BaseURL.ResolveReference(rel)
 
+	var contentType string
 	var buf io.ReadWriter
 	if body != nil {
 		buf = new(bytes.Buffer)
@@ -68,6 +69,7 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*http.Reques
 		if err != nil {
 			return nil, err
 		}
+		contentType = "application/json"
 	}
 
 	request, err := http.NewRequest(method, url.String(), buf)
@@ -76,6 +78,9 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*http.Reques
 	}
 
 	request.Header.Set("Accept", "application/json")
+	if contentType != "" {
+		request.Header.Set("Content-Type", contentType)
+	}
 	if c.UserAgent != "" {
 		request.Header.Set("User-Agent", c.UserAgent)
 	}

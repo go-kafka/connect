@@ -1,6 +1,7 @@
 package connect
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -65,15 +66,19 @@ type TaskState struct {
 
 // TODO: Probably need to URL-encode connector names
 
-// CreateConnector creates a new connector instance. It returns an error if
-// creation is unsuccessful.
+// CreateConnector creates a new connector instance. If successful, conn is
+// updated with the connector's state returned by the API, including Tasks.
+//
+// Passing an object that already contains Tasks produces an error.
 //
 // See: http://docs.confluent.io/current/connect/userguide.html#post--connectors
-//
-// TODO: return the full connector info so that tasks are listed?
-func CreateConnector(conn Connector) error {
-	log.Println("Called CreateConnector")
-	return nil
+func (c *Client) CreateConnector(conn *Connector) (*http.Response, error) {
+	if len(conn.Tasks) != 0 {
+		return nil, errors.New("Cannot create Connector with existing Tasks")
+	}
+	path := "connectors"
+	response, err := c.doRequest("POST", path, conn, conn)
+	return response, err
 }
 
 // ListConnectors retrieves a list of active connector names.
