@@ -34,7 +34,6 @@ var _ = Describe("Connector CRUD", func() {
 	fileSourceConfig := ConnectorConfig{
 		"connector.class": "FileStreamSource",
 		"file":            "/tmp/test.txt",
-		"name":            "local-file-source",
 		"tasks.max":       "1",
 		"topic":           "go-kafka-connect-test",
 	}

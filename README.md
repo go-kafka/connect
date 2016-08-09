@@ -38,7 +38,7 @@ The tool is self-documenting: run `kafka-connect help` or `kafka-connect help
       list
         Lists active connectors. Aliased as 'ls'.
 
-      create <name>
+      create [<flags>] [<name>]
         Creates a new connector instance.
 
       update <name>

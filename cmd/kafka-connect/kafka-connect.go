@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,6 +12,21 @@ import (
 
 	"github.com/go-kafka/connect"
 )
+
+const hostenv = "KAFKA_CONNECT_CLI_HOST"
+
+// ValidationError indicates that command arguments break an expected invariant.
+type ValidationError struct {
+	Message string
+
+	// Flag suggesting that a handler should display contextual usage help in
+	// addition to the short error message (e.g. kingpin.FatalUsageContext).
+	SuggestUsage bool
+}
+
+func (e ValidationError) Error() string {
+	return e.Message
+}
 
 // A connectorAction is a function that performs an imperative action on a
 // Connector by name.
@@ -25,11 +40,12 @@ var (
 	listCmd, createCmd, updateCmd, deleteCmd *kingpin.CmdClause
 	showCmd, configCmd, tasksCmd, statusCmd  *kingpin.CmdClause
 	pauseCmd, resumeCmd, restartCmd          *kingpin.CmdClause
+
+	newConnectorFilePath, connectorConfigPath string
 )
 
-// The modular style of Kingpin setup might cut down on the non-local vars, but
-// it feels pretty heavy and less declarative, so I'm undecided...
-func buildApp() *kingpin.Application {
+// BuildApp constructs the kafka-connect command line interface.
+func BuildApp() *kingpin.Application {
 	app := kingpin.New("kafka-connect", "Command line utility for managing Kafka Connect.").
 		Version("kafka-connect CLI " + connect.VERSION).
 		Author("Ches Martin").
@@ -40,9 +56,11 @@ func buildApp() *kingpin.Application {
 	app.Flag("host", "Host address for the Kafka Connect REST API instance.").
 		Short('H').
 		Default(connect.DefaultHostURL).
-		Envar("KAFKA_CONNECT_CLI_HOST").
+		Envar(hostenv).
 		URLVar(&host)
 
+	// The modular style of Kingpin setup might cut down on the non-local vars,
+	// but it feels pretty heavy and less declarative, so I'm undecided...
 	listCmd = app.Command("list", "Lists active connectors. Aliased as 'ls'.").Alias("ls")
 	createCmd = app.Command("create", "Creates a new connector instance.")
 	updateCmd = app.Command("update", "Updates a connector.")
@@ -59,37 +77,97 @@ func buildApp() *kingpin.Application {
 	// plugin subcommand: list (default), validate
 
 	// Most commands need a connector name, reduce the boilerplate.
-	addConnectorNameArg := func(cmdName, hint string) {
+	addConnectorNameArg := func(cmdName, hint string, required bool) {
 		command := app.GetCommand(cmdName)
 		desc := fmt.Sprintf("Name of the connector to %v.", hint)
-		command.Arg("name", desc).Required().StringVar(&connName)
+		if required {
+			command.Arg("name", desc).Required().StringVar(&connName)
+		} else {
+			command.Arg("name", desc).StringVar(&connName)
+		}
 	}
 
-	hintedByName := []string{"create", "update", "delete", "show", "pause", "resume", "restart"}
+	addConnectorNameArg("create", "create", false)
+	hintedByName := []string{"update", "delete", "show", "pause", "resume", "restart"}
 	for _, name := range hintedByName {
-		addConnectorNameArg(name, name)
+		addConnectorNameArg(name, name, true)
 	}
 	for _, name := range []string{"config", "tasks", "status"} {
-		addConnectorNameArg(name, "look up")
+		addConnectorNameArg(name, "look up", true)
 	}
+
+	createCmd.Flag("from-file", "A JSON file matching API request format, including connector name.").
+		Short('f').
+		PlaceHolder("FILE").
+		ExistingFileVar(&newConnectorFilePath)
+	createCmd.Flag("config", "A JSON file containing connector config.").
+		Short('c').
+		PlaceHolder("FILE").
+		ExistingFileVar(&connectorConfigPath)
+
+	// Re-initialize global state for in-process tests, yeah kinda gross
+	connName, newConnectorFilePath, connectorConfigPath = "", "", ""
+	host = nil
 
 	return app
 }
 
-func main() {
-	app := buildApp()
-	argv := os.Args[1:]
-	subcommand, err := app.Parse(argv)
-
-	if err != nil {
-		context, _ := app.ParseContext(argv)
-		app.FatalUsageContext(context, err.Error())
+// ValidateArgs parses and validates CLI arguments, isolated from execution
+// logic. Returns user's parsed subcommand if invocation is valid, else error.
+func ValidateArgs(app *kingpin.Application, argv []string) (subcommand string, err error) {
+	// TODO: Employ kingpin Validate, but it's currently difficult to use:
+	// https://github.com/alecthomas/kingpin/issues/125
+	if subcommand, err = app.Parse(argv); err != nil {
+		return
 	}
 
-	// TODO: use kingpin Validate, but it's currently difficult to use:
-	// https://github.com/alecthomas/kingpin/issues/125
 	if !(*host).IsAbs() {
-		app.Fatalf("host %v is not a valid absolute URL", (*host).String())
+		msg := fmt.Sprintf("host %v is not a valid absolute URL", (*host).String())
+		if os.Getenv(hostenv) != "" {
+			msg += fmt.Sprintf(" (set by %v)", hostenv)
+		}
+		err = ValidationError{msg, false}
+		return
+	}
+
+	if subcommand == createCmd.FullCommand() {
+		if connName == "" {
+			if connectorConfigPath != "" {
+				err = ValidationError{"--config requires a connector name", true}
+				return
+			}
+			if newConnectorFilePath == "" {
+				err = ValidationError{"either a connector name or --from-file is required", true}
+				return
+			}
+		} else {
+			if connectorConfigPath == "" {
+				err = ValidationError{"--config is required with a connector name", true}
+				return
+			}
+			// Kingpin v3 might give us first-class mutual exclusivity support with
+			// nice usage output: https://github.com/alecthomas/kingpin/issues/103
+			if newConnectorFilePath != "" {
+				err = ValidationError{"--from-file and --config are mutually exclusive", true}
+				return
+			}
+		}
+	}
+
+	return
+}
+
+func main() {
+	app := BuildApp()
+	argv := os.Args[1:]
+	subcommand, err := ValidateArgs(app, argv)
+
+	if err != nil {
+		if verr, ok := err.(ValidationError); ok && !verr.SuggestUsage {
+			app.Fatalf(verr.Error())
+		}
+		context, _ := app.ParseContext(argv)
+		app.FatalUsageContext(context, err.Error())
 	}
 
 	// Localize use of os.Exit because it doesn't run deferreds
@@ -108,7 +186,8 @@ func run(subcommand string) error {
 		return maybePrintAPIResult(client.ListConnectors())
 
 	case createCmd.FullCommand():
-		return errors.New("Sorry, create is not yet implemented")
+		// TODO: verify/improve error output of 409 Conflict
+		return createConnector(connName, client)
 
 	case updateCmd.FullCommand():
 		_, err := connect.UpdateConnectorConfig(connName, connect.ConnectorConfig{})
@@ -164,6 +243,50 @@ func affectConnector(name string, action connectorAction, desc string) error {
 	}
 
 	return err
+}
+
+func createConnector(name string, client *connect.Client) (err error) {
+	var connector connect.Connector
+
+	// TODO: more error message context
+	unmarshalInto := func(target interface{}, filepath string) error {
+		if contents, err := ioutil.ReadFile(filepath); err == nil {
+			return json.Unmarshal(contents, target)
+		}
+		return err
+	}
+
+	if newConnectorFilePath != "" {
+		// kafka-connect create --from-file
+		err = unmarshalInto(&connector, newConnectorFilePath)
+	} else {
+		// kafka-connect create my-conn-name --config
+		var config connect.ConnectorConfig
+		err = unmarshalInto(&config, connectorConfigPath)
+		connector = connect.Connector{Name: name, Config: config}
+	}
+
+	if err != nil {
+		return
+	}
+
+	// The API dubiously allows creating connectors with blank names... That's
+	// probably a mistake, let's try to avoid it. It also sometimes returns name
+	// as an attribute of config, so this might be present in roundtrip
+	// scripting.
+	// TODO: could apply this workaround in the library, but I'd rather get
+	// the behavior acknowledged as a bug and not do that.
+	if connector.Name == "" && connector.Config["name"] != "" {
+		connector.Name = connector.Config["name"]
+	}
+
+	if _, err = client.CreateConnector(&connector); err == nil {
+		if output, err := formatPrettyJSON(connector); err == nil {
+			fmt.Println(output)
+		}
+	}
+
+	return
 }
 
 // TODO: Some kind of formatter abstraction
