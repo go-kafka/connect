@@ -216,8 +216,9 @@ func run(subcommand string) error {
 		return createConnector(connName, client)
 
 	case updateCmd.FullCommand():
-		config, err := decodeConnectorConfig()
-		if err != nil {
+		var config connect.ConnectorConfig
+		source := findInputSource()
+		if err := decodeConnectorConfig(source, &config); err != nil {
 			return err
 		}
 		return maybePrintAPIResult(client.UpdateConnectorConfig(connName, config))
@@ -276,42 +277,30 @@ func affectConnector(name string, action connectorAction, desc string) error {
 
 func createConnector(name string, client *connect.Client) (err error) {
 	var connector connect.Connector
+	source := findInputSource()
 
-	// Are we creating from --from-file, --config, or stdin?
-	getDataSource := func() string {
-		if pipedinput {
-			return os.Stdin.Name()
-		}
-		if newConnectorFilePath != "" {
-			return newConnectorFilePath
-		}
-		return connectorConfigPath
-	}
-
-	// TODO: more error message context
-	// TODO: should really buffer stdin just in case...
-	unmarshalInto := func(target interface{}, filepath string) error {
-		if contents, err := ioutil.ReadFile(filepath); err == nil {
-			return json.Unmarshal(contents, target)
-		}
-		return err
-	}
-
-	readFrom := getDataSource()
-	if readFrom == newConnectorFilePath || name == "" {
+	if source == newConnectorFilePath || name == "" {
 		// kafka-connect create --from-file
 		// cat connector.json | kafka-connect create
-		err = unmarshalInto(&connector, readFrom)
+		err = decodeConnectorConfig(source, &connector)
 	} else {
 		// kafka-connect create my-conn-name --config
 		// cat config.json | kafka-connect create my-conn-name
 		var config connect.ConnectorConfig
-		err = unmarshalInto(&config, readFrom)
+		err = decodeConnectorConfig(source, &config)
 		connector = connect.Connector{Name: name, Config: config}
 	}
 
 	if err != nil {
 		return
+	}
+
+	// Go's JSON decoding is not strict so it can succeed even if we got
+	// something that isn't a Connector (e.g. a ConnectorConfig passed to
+	// create). The API handles bad input poorly (500s instead of 422), so try
+	// to give the user a better error than HTTP does.
+	if connector.Config == nil {
+		return fmt.Errorf("input was not a valid connector (%v)", source)
 	}
 
 	// The API dubiously allows creating connectors with blank names... That's
@@ -333,22 +322,33 @@ func createConnector(name string, client *connect.Client) (err error) {
 	return
 }
 
-func decodeConnectorConfig() (config connect.ConnectorConfig, err error) {
-	var source string
-
+// Are we getting data via stdin, create --from-file, or --config?
+func findInputSource() (path string) {
 	if pipedinput {
-		source = os.Stdin.Name()
-	} else {
-		source = connectorConfigPath
+		return os.Stdin.Name()
 	}
+	if newConnectorFilePath != "" {
+		return newConnectorFilePath
+	}
+	if connectorConfigPath != "" {
+		return connectorConfigPath
+	}
+	return
+}
 
+// Attempts to unmarshal data from source into dst. This should be a pointer to
+// a Connector or ConnectorConfig expected to be found in source.
+func decodeConnectorConfig(source string, dst interface{}) error {
+	// TODO: should really buffer stdin just in case...
 	contents, err := ioutil.ReadFile(source)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	if err := json.Unmarshal(contents, dst); err != nil {
+		return fmt.Errorf("input was not a valid connector configuration (%v)", source)
 	}
 
-	err = json.Unmarshal(contents, &config)
-	return config, err
+	return nil
 }
 
 // TODO: Some kind of formatter abstraction
