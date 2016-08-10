@@ -111,6 +111,11 @@ func BuildApp() *kingpin.Application {
 		PlaceHolder("FILE").
 		ExistingFileVar(&connectorConfigPath)
 
+	updateCmd.Flag("config", "A JSON file containing connector config.").
+		Short('c').
+		PlaceHolder("FILE").
+		ExistingFileVar(&connectorConfigPath)
+
 	// Re-initialize global state for in-process tests, yeah kinda gross
 	connName, newConnectorFilePath, connectorConfigPath = "", "", ""
 	host = nil
@@ -136,7 +141,8 @@ func ValidateArgs(app *kingpin.Application, argv []string) (subcommand string, e
 		return
 	}
 
-	if subcommand == createCmd.FullCommand() {
+	switch subcommand {
+	case createCmd.FullCommand():
 		if pipedinput && (newConnectorFilePath != "" || connectorConfigPath != "") {
 			err = ValidationError{"--from-file and --config cannot be used with input from stdin", false}
 			return
@@ -162,6 +168,15 @@ func ValidateArgs(app *kingpin.Application, argv []string) (subcommand string, e
 				err = ValidationError{"--from-file and --config are mutually exclusive", true}
 				return
 			}
+		}
+	case updateCmd.FullCommand():
+		if pipedinput && connectorConfigPath != "" {
+			err = ValidationError{"--config cannot be used with input from stdin", false}
+			return
+		}
+		if connectorConfigPath == "" && !pipedinput {
+			err = ValidationError{"configuration input is required, try --config or pipe to stdin", true}
+			return
 		}
 	}
 
@@ -201,8 +216,11 @@ func run(subcommand string) error {
 		return createConnector(connName, client)
 
 	case updateCmd.FullCommand():
-		_, err := connect.UpdateConnectorConfig(connName, connect.ConnectorConfig{})
-		return err
+		config, err := decodeConnectorConfig()
+		if err != nil {
+			return err
+		}
+		return maybePrintAPIResult(client.UpdateConnectorConfig(connName, config))
 
 	case deleteCmd.FullCommand():
 		// TODO: verify error output of 409 Conflict
@@ -313,6 +331,24 @@ func createConnector(name string, client *connect.Client) (err error) {
 	}
 
 	return
+}
+
+func decodeConnectorConfig() (config connect.ConnectorConfig, err error) {
+	var source string
+
+	if pipedinput {
+		source = os.Stdin.Name()
+	} else {
+		source = connectorConfigPath
+	}
+
+	contents, err := ioutil.ReadFile(source)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(contents, &config)
+	return config, err
 }
 
 // TODO: Some kind of formatter abstraction

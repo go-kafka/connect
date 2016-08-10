@@ -157,4 +157,31 @@ var _ = Describe("Argument Validation", func() {
 			})
 		})
 	})
+
+	Describe("for update", func() {
+		BeforeEach(func() { argv = []string{"update"} })
+
+		Context("without a connector name", func() {
+			It("fails", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("required argument 'name' not provided"))
+			})
+		})
+
+		Context("with a connector name", func() {
+			BeforeEach(func() { argv = append(argv, "a-name") })
+
+			Context("without --config", func() {
+				It("fails", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("configuration input is required"))
+				})
+
+				It("suggests usage", func() {
+					verr, _ := err.(ValidationError)
+					Expect(verr.SuggestUsage).To(BeTrue())
+				})
+			})
+		})
+	})
 })

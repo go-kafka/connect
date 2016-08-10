@@ -329,10 +329,50 @@ var _ = Describe("Connector CRUD", func() {
 	})
 
 	Describe("UpdateConnectorConfig", func() {
-		It("returns updated connector when successful", func() {
-			connector, err := UpdateConnectorConfig("test", ConnectorConfig{})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(connector).NotTo(BeNil()) // TODO: assert properties of the connector
+		var statusCode int
+
+		resultConnector := Connector{
+			Name:   "local-file-source",
+			Config: fileSourceConfig,
+			Tasks:  []TaskID{{"local-file-source", 0}},
+		}
+
+		BeforeEach(func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("PUT", "/connectors/local-file-source/config"),
+					ghttp.VerifyHeader(jsonContentHeader),
+					ghttp.VerifyHeader(jsonAcceptHeader),
+					ghttp.VerifyJSONRepresenting(fileSourceConfig),
+					ghttp.RespondWithJSONEncodedPtr(&statusCode, &resultConnector),
+				),
+			)
+		})
+
+		Context("when existing connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusOK
+			})
+
+			It("returns updated connector", func() {
+				connector, resp, err := client.UpdateConnectorConfig("local-file-source", fileSourceConfig)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(connector.Config["file"]).To(Equal("/tmp/test.txt"))
+				Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			})
+		})
+
+		Context("when nonexisting connector name is given", func() {
+			BeforeEach(func() {
+				statusCode = http.StatusCreated
+			})
+
+			It("returns newly created connector with a Created response", func() {
+				connector, resp, err := client.UpdateConnectorConfig("local-file-source", fileSourceConfig)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(*connector).To(Equal(resultConnector))
+				Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+			})
 		})
 	})
 

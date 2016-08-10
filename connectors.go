@@ -3,7 +3,6 @@ package connect
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 )
 
@@ -136,12 +135,17 @@ func (c *Client) GetConnectorStatus(name string) (*ConnectorStatus, *http.Respon
 }
 
 // UpdateConnectorConfig updates configuration for an existing connector with
-// the given name. If the connector does not exist, it will be created.
+// the given name, returning the new state of the Connector.
+//
+// If the connector does not exist, it will be created, and the returned HTTP
+// response will indicate a 201 Created status.
 //
 // See: http://docs.confluent.io/current/connect/userguide.html#put--connectors-(string-name)-config
-func UpdateConnectorConfig(name string, config ConnectorConfig) (Connector, error) {
-	log.Println("Called UpdateConnectorConfig")
-	return Connector{}, nil
+func (c *Client) UpdateConnectorConfig(name string, config ConnectorConfig) (*Connector, *http.Response, error) {
+	path := fmt.Sprintf("connectors/%v/config", name)
+	connector := new(Connector)
+	response, err := c.doRequest("PUT", path, config, connector)
+	return connector, response, err
 }
 
 // DeleteConnector deletes a connector with the given name, halting all tasks
