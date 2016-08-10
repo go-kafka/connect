@@ -33,6 +33,8 @@ func (e ValidationError) Error() string {
 type connectorAction func(name string) (*http.Response, error)
 
 var (
+	pipedinput bool
+
 	host     *url.URL
 	connName string
 
@@ -43,6 +45,10 @@ var (
 
 	newConnectorFilePath, connectorConfigPath string
 )
+
+func init() {
+	pipedinput = !isatty(os.Stdin)
+}
 
 // BuildApp constructs the kafka-connect command line interface.
 func BuildApp() *kingpin.Application {
@@ -131,17 +137,22 @@ func ValidateArgs(app *kingpin.Application, argv []string) (subcommand string, e
 	}
 
 	if subcommand == createCmd.FullCommand() {
+		if pipedinput && (newConnectorFilePath != "" || connectorConfigPath != "") {
+			err = ValidationError{"--from-file and --config cannot be used with input from stdin", false}
+			return
+		}
+
 		if connName == "" {
 			if connectorConfigPath != "" {
 				err = ValidationError{"--config requires a connector name", true}
 				return
 			}
-			if newConnectorFilePath == "" {
+			if newConnectorFilePath == "" && !pipedinput {
 				err = ValidationError{"either a connector name or --from-file is required", true}
 				return
 			}
 		} else {
-			if connectorConfigPath == "" {
+			if connectorConfigPath == "" && !pipedinput {
 				err = ValidationError{"--config is required with a connector name", true}
 				return
 			}
@@ -248,7 +259,19 @@ func affectConnector(name string, action connectorAction, desc string) error {
 func createConnector(name string, client *connect.Client) (err error) {
 	var connector connect.Connector
 
+	// Are we creating from --from-file, --config, or stdin?
+	getDataSource := func() string {
+		if pipedinput {
+			return os.Stdin.Name()
+		}
+		if newConnectorFilePath != "" {
+			return newConnectorFilePath
+		}
+		return connectorConfigPath
+	}
+
 	// TODO: more error message context
+	// TODO: should really buffer stdin just in case...
 	unmarshalInto := func(target interface{}, filepath string) error {
 		if contents, err := ioutil.ReadFile(filepath); err == nil {
 			return json.Unmarshal(contents, target)
@@ -256,13 +279,16 @@ func createConnector(name string, client *connect.Client) (err error) {
 		return err
 	}
 
-	if newConnectorFilePath != "" {
+	readFrom := getDataSource()
+	if readFrom == newConnectorFilePath || name == "" {
 		// kafka-connect create --from-file
-		err = unmarshalInto(&connector, newConnectorFilePath)
+		// cat connector.json | kafka-connect create
+		err = unmarshalInto(&connector, readFrom)
 	} else {
 		// kafka-connect create my-conn-name --config
+		// cat config.json | kafka-connect create my-conn-name
 		var config connect.ConnectorConfig
-		err = unmarshalInto(&config, connectorConfigPath)
+		err = unmarshalInto(&config, readFrom)
 		connector = connect.Connector{Name: name, Config: config}
 	}
 
@@ -296,4 +322,14 @@ func formatPrettyJSON(v interface{}) (string, error) {
 		return "", err
 	}
 	return string(pretty), nil
+}
+
+// TODO: This probably doesn't work on Windows.
+// https://github.com/mattn/go-isatty
+func isatty(file *os.File) bool {
+	stat, err := file.Stat()
+	if err != nil {
+		return false
+	}
+	return (stat.Mode() & os.ModeCharDevice) != 0
 }
