@@ -75,6 +75,15 @@ release: dist
 	cd ..
 	@echo Done
 
+man: install
+	mkdir -p man
+	kafka-connect --help-man > man/kafka-connect.1
+	nroff -man man/kafka-connect.1
+	@echo
+	@echo -----------------------------------------
+	@echo Man page generated at man/kafka-connect.1
+	@echo -----------------------------------------
+
 clean:
 	$(RM) *.coverprofile
 	$(RM) -r man
@@ -89,5 +98,4 @@ distclean: clean
 
 .PHONY: build install test spec coverage browse-coverage
 .PHONY: lint errcheck zen get-devtools
-.PHONY: dist get-reltools release
-.PHONY: clean clean-vendor distclean
+.PHONY: dist get-reltools man release
