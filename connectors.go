@@ -183,20 +183,3 @@ func (c *Client) RestartConnector(name string) (*http.Response, error) {
 	path := fmt.Sprintf("connectors/%v/restart", name)
 	return c.doRequest("POST", path, nil, nil)
 }
-
-func (c *Client) get(path string, v interface{}) (*http.Response, error) {
-	return c.doRequest("GET", path, nil, v)
-}
-
-func (c *Client) delete(path string) (*http.Response, error) {
-	return c.doRequest("DELETE", path, nil, nil)
-}
-
-func (c *Client) doRequest(method, path string, body, v interface{}) (*http.Response, error) {
-	request, err := c.NewRequest(method, path, body)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.Do(request, v)
-}

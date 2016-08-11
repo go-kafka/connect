@@ -112,6 +112,24 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	return response, err
 }
 
+// Simple GET helper with no request body.
+func (c *Client) get(path string, v interface{}) (*http.Response, error) {
+	return c.doRequest("GET", path, nil, v)
+}
+
+func (c *Client) delete(path string) (*http.Response, error) {
+	return c.doRequest("DELETE", path, nil, nil)
+}
+
+func (c *Client) doRequest(method, path string, body, v interface{}) (*http.Response, error) {
+	request, err := c.NewRequest(method, path, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Do(request, v)
+}
+
 func buildError(req *http.Request, resp *http.Response) error {
 	apiError := APIError{Response: resp}
 	data, err := ioutil.ReadAll(resp.Body)
