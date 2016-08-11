@@ -68,8 +68,12 @@ The tool is self-documenting: run `kafka-connect help` or `kafka-connect help
       restart <name>
         Restart a connector and its tasks.
 
+For examples, see [the Godoc page for the command][cmd doc].
+
 The process exits with a zero status when operations are successful and
 non-zero in the case of errors.
+
+[cmd doc]: https://godoc.org/github.com/go-kafka/connect/cmd/kafka-connect
 
 ### Manual Page ###
 
@@ -231,38 +235,6 @@ Contributing
 ------------
 
 Please see [the Contributing Guide](CONTRIBUTING.md).
-
-TODO
-----
-
-### Features ###
-
-- [ ] Dynamic shell completion of connector names.
-- [ ] Other output/input support: ASCII tables, Java properties.
-- [ ] TLS/SSL?
-- [ ] Logging?
-
-### Enhancements ###
-
-- [ ] Do something useful in known error conditions, like 409 for restart
-  during rebalance.
-- [ ] Output compact JSON when stdout is not a TTY, with an option to force.
-  Mimic jq's options.
-- [ ] More efficient byte stream de/encoding than unmarshaling JSON and then
-  marshaling again to print it?
-- [x] Consider testing the CLI with Gomega's gexec features.
-
-### Meta ###
-
-- [ ] Decide and document versioning scheme. Might be best to version CLI
-  separately.
-- [ ] Use gopkg.in for the library's sake?
-- [ ] Publish checksums/sigs for releases, document `gpg --verify` steps.
-- [ ] Write the package documentation in `version.go` or `doc.go`.
-- [ ] Add some examples for library usage.
-- [ ] Drop vendored dependency sources when Glide merges gps solver.
-- [ ] Follow [dropping protobuf test dependency from
-  Gomega](https://github.com/onsi/gomega/issues/123)
 
 
 [Kafka Connect]: http://docs.confluent.io/current/connect/intro.html
