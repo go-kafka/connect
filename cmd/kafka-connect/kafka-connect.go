@@ -13,7 +13,14 @@ import (
 	"github.com/go-kafka/connect"
 )
 
-const hostenv = "KAFKA_CONNECT_CLI_HOST"
+const (
+	// Version is the kafka-connect CLI version.
+	Version       = "0.9.0"
+	versionString = "kafka-connect version " + Version + "\n" +
+		"go-kafka/connect version " + connect.Version
+
+	hostenv = "KAFKA_CONNECT_CLI_HOST"
+)
 
 // ValidationError indicates that command arguments break an expected invariant.
 type ValidationError struct {
@@ -42,6 +49,7 @@ var (
 	listCmd, createCmd, updateCmd, deleteCmd *kingpin.CmdClause
 	showCmd, configCmd, tasksCmd, statusCmd  *kingpin.CmdClause
 	pauseCmd, resumeCmd, restartCmd          *kingpin.CmdClause
+	versionCmd                               *kingpin.CmdClause
 
 	newConnectorFilePath, connectorConfigPath string
 )
@@ -53,7 +61,7 @@ func init() {
 // BuildApp constructs the kafka-connect command line interface.
 func BuildApp() *kingpin.Application {
 	app := kingpin.New("kafka-connect", "Command line utility for managing Kafka Connect.").
-		Version("kafka-connect CLI " + connect.VERSION).
+		Version(Version). // man page template messed up by versionString...
 		Author("Ches Martin").
 		UsageWriter(os.Stdout)
 
@@ -78,6 +86,7 @@ func BuildApp() *kingpin.Application {
 	pauseCmd = app.Command("pause", "Pause a connector and its tasks.")
 	resumeCmd = app.Command("resume", "Resume a paused connector.")
 	restartCmd = app.Command("restart", "Restart a connector and its tasks.")
+	versionCmd = app.Command("version", "Shows kafka-connect version information.")
 
 	// TODO: New stuff
 	// plugin subcommand: list (default), validate
@@ -245,6 +254,10 @@ func run(subcommand string) error {
 	case restartCmd.FullCommand():
 		// TODO: verify error output of 409 Conflict
 		return affectConnector(connName, client.RestartConnector, "Restarted")
+
+	case versionCmd.FullCommand():
+		_, err := fmt.Println(versionString)
+		return err
 
 	default: // won't reach here, arg parsing handles unknown commands
 		return fmt.Errorf("Command `%v` is missing implementation!", subcommand)

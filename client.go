@@ -20,7 +20,7 @@ const (
 	// DefaultHostURL is the default HTTP host used for connecting to a Kafka
 	// Connect REST API.
 	DefaultHostURL = "http://localhost:8083/"
-	userAgent      = "go-kafka/0.9 connect/" + VERSION
+	userAgent      = "go-kafka/0.9 connect/" + Version
 )
 
 // A Client manages communication with the Kafka Connect REST API.

@@ -1,6 +1,7 @@
 Kafka Connect CLI
 =================
 
+[![Release][release-badge]][latest release]
 [![Build Status][travis-badge]][build status]
 [![Coverage Status][coverage-badge]][coverage status]
 [![Go Report Card][go-report-badge]][go report card]
@@ -12,13 +13,14 @@ through runbooks of `curl` commands when something's going wrong, or ever
 really.
 
 This project also contains a Go library for the Kafka Connect API usable by
-other Go-based tools or applications. See below for details.
+other Go tools or applications. See [Using the Go
+Library](#using-the-go-library) for details.
 
 Usage
 -----
 
 The tool is self-documenting: run `kafka-connect help` or `kafka-connect help
-<subcommand>` when you need a reference.
+<subcommand>` when you need a reference. A summary of functionality:
 
     $ kafka-connect
     usage: kafka-connect [<flags>] <command> [<args> ...]
@@ -68,6 +70,9 @@ The tool is self-documenting: run `kafka-connect help` or `kafka-connect help
       restart <name>
         Restart a connector and its tasks.
 
+      version
+        Shows kafka-connect version information.
+
 For examples, see [the Godoc page for the command][cmd doc].
 
 The process exits with a zero status when operations are successful and
@@ -83,6 +88,14 @@ If you'd like a `man` page, you can generate one and place it on your
 ```sh
 $ kafka-connect --help-man > /usr/local/share/man/man1/kafka-connect.1
 ```
+
+### Options ###
+
+Expanded details for select parameters:
+
+- `--host / -H`: API host address, default `http://localhost:8083/`. Can be set
+  with environment variable `KAFKA_CONNECT_CLI_HOST`. Note that you can target
+  any host in a Kafka Connect cluster.
 
 Installation
 ------------
@@ -132,8 +145,8 @@ would like a binary build for a platform that is not currently published, I'm
 happy to make one available as long as Go can cross-compile it without
 problem—please open an issue.*
 
-To build your own version from source, see the below *Building and Development*
-section.
+To build your own version from source, see the below [Building and
+Development](#building-and-development) section.
 
 ### Command Completion ###
 
@@ -145,18 +158,6 @@ which kafka-connect >/dev/null && eval "$(kafka-connect --completion-script-bash
 ```
 
 Predictably, use `--completion-script-zsh` for zsh.
-
-Options
--------
-
-Expanded details for select parameters, including supported environment
-variables:
-
-- `--host / -H`: API host address, default `http://localhost:8083/`. Supports
-  environment variable `KAFKA_CONNECT_CLI_HOST`. Note that you can target any
-  host in a Kafka Connect cluster.
-
-Others? `CLASSPATH` that the shell scripts support for connector plugins.
 
 Building and Development
 ------------------------
@@ -216,6 +217,12 @@ installed unless you append `/...` to the `go get` command above).
 
 See the API documentation linked above for examples.
 
+Versions
+--------
+
+For information about versioning policy and compatibility status please see
+[the release notes](HISTORY.md).
+
 Alternatives
 ------------
 
@@ -234,7 +241,13 @@ Kudos to the kafka-connect-tools authors for inspiration.
 Contributing
 ------------
 
-Please see [the Contributing Guide](CONTRIBUTING.md).
+Please see [the Contributing Guide](CONTRIBUTING.md)!
+
+License
+-------
+
+The library and CLI tool are made available under the terms of the MIT license,
+see the [LICENSE](LICENSE) file for full details.
 
 
 [Kafka Connect]: http://docs.confluent.io/current/connect/intro.html
@@ -246,6 +259,8 @@ Please see [the Contributing Guide](CONTRIBUTING.md).
 [ginkgo cli]: https://onsi.github.io/ginkgo/#the-ginkgo-cli
 [glide execs]: https://github.com/Masterminds/glide/pull/331
 
+[release-badge]: https://img.shields.io/github/release/go-kafka/connect.svg?maxAge=2592000
+[latest release]: https://github.com/go-kafka/connect/releases/latest
 [travis-badge]:https://travis-ci.org/go-kafka/connect.svg?branch=master
 [build status]: https://travis-ci.org/go-kafka/connect
 [coverage-badge]: https://codecov.io/gh/go-kafka/connect/branch/master/graph/badge.svg

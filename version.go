@@ -1,6 +1,5 @@
-// Package connect provides TODO
+// Package connect provides a client for the Kafka Connect REST API.
 package connect
 
-// VERSION is a programmatically-available declaration of the kafka-connect
-// library version.
-const VERSION = "0.1.0"
+// Version is the go-kafka/connect library version.
+const Version = "0.9.0"

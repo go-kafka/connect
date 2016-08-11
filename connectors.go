@@ -149,8 +149,7 @@ func (c *Client) UpdateConnectorConfig(name string, config ConnectorConfig) (*Co
 }
 
 // DeleteConnector deletes a connector with the given name, halting all tasks
-// and deleting its configuration. Returns whether deletion was successful or
-// not.
+// and deleting its configuration.
 //
 // See: http://docs.confluent.io/current/connect/userguide.html#delete--connectors-(string-name)-
 func (c *Client) DeleteConnector(name string) (*http.Response, error) {
