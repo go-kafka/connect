@@ -106,7 +106,7 @@ Fetch the appropriate version for your platform and place it somewhere on your
 `PATH`. The YOLO way:
 
 ```sh
-$ curl -L https://github.com/go-kafka/connect/releases/download/v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip
+$ curl -L https://github.com/go-kafka/connect/releases/download/cli-v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip
 $ unzip kafka-connect-v0.9.0-linux-amd64.zip
 $ mv linux-amd64/kafka-connect /usr/local/bin/
 ```
@@ -114,8 +114,8 @@ $ mv linux-amd64/kafka-connect /usr/local/bin/
 The prudent way:
 
 ```sh
-$ curl -L https://github.com/go-kafka/connect/releases/download/v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip
-$ curl -L https://github.com/go-kafka/connect/releases/download/v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip.sha256sum
+$ curl -L https://github.com/go-kafka/connect/releases/download/cli-v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip
+$ curl -L https://github.com/go-kafka/connect/releases/download/cli-v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip.sha256sum
 # Verify integrity of the archive file, on OS X try shasum --check
 $ sha256sum --check kafka-connect-v0.9.0-linux-amd64.zip.sha256sum
 $ unzip kafka-connect-v0.9.0-linux-amd64.zip
@@ -125,7 +125,7 @@ $ mv linux-amd64/kafka-connect /usr/local/bin/
 Or best of all, the careful way:
 
 ```sh
-$ curl -L https://github.com/go-kafka/connect/releases/download/v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip
+$ curl -L https://github.com/go-kafka/connect/releases/download/cli-v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip
 $ unzip kafka-connect-v0.9.0-linux-amd64.zip
 # Verify signature of the binary:
 $ gpg --verify linux-amd64/kafka-connect{.asc,}
@@ -259,7 +259,7 @@ see the [LICENSE](LICENSE) file for full details.
 [ginkgo cli]: https://onsi.github.io/ginkgo/#the-ginkgo-cli
 [glide execs]: https://github.com/Masterminds/glide/pull/331
 
-[release-badge]: https://img.shields.io/github/release/go-kafka/connect.svg?maxAge=2592000
+[release-badge]: https://img.shields.io/github/release/go-kafka/connect.svg
 [latest release]: https://github.com/go-kafka/connect/releases/latest
 [travis-badge]:https://travis-ci.org/go-kafka/connect.svg?branch=master
 [build status]: https://travis-ci.org/go-kafka/connect
