@@ -83,16 +83,45 @@ $ kafka-connect --help-man > /usr/local/share/man/man1/kafka-connect.1
 Installation
 ------------
 
-Binary releases [are available on GitHub][releases] with checksums.
+Binary releases [are available on GitHub][releases], signed and with checksums.
 
 Fetch the appropriate version for your platform and place it somewhere on your
-`PATH`:
+`PATH`. The YOLO way:
 
 ```sh
-$ curl -L -o kafka-connect https://github.com/go-kafka/connect/releases/download/0.9/kafka-connect-0.9-linux-amd64
-$ sha256sum kafka-connect  # Verify checksum for your arch with releases page
-$ mv kafka-connect /usr/local/bin/
+$ curl -L https://github.com/go-kafka/connect/releases/download/v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip
+$ unzip kafka-connect-v0.9.0-linux-amd64.zip
+$ mv linux-amd64/kafka-connect /usr/local/bin/
 ```
+
+The prudent way:
+
+```sh
+$ curl -L https://github.com/go-kafka/connect/releases/download/v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip
+$ curl -L https://github.com/go-kafka/connect/releases/download/v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip.sha256sum
+# Verify integrity of the archive file, on OS X try shasum --check
+$ sha256sum --check kafka-connect-v0.9.0-linux-amd64.zip.sha256sum
+$ unzip kafka-connect-v0.9.0-linux-amd64.zip
+$ mv linux-amd64/kafka-connect /usr/local/bin/
+```
+
+Or best of all, the careful way:
+
+```sh
+$ curl -L https://github.com/go-kafka/connect/releases/download/v0.9.0/kafka-connect-v0.9.0-linux-amd64.zip
+$ unzip kafka-connect-v0.9.0-linux-amd64.zip
+# Verify signature of the binary:
+$ gpg --verify linux-amd64/kafka-connect{.asc,}
+$ mv linux-amd64/kafka-connect /usr/local/bin/
+```
+
+You can find my GPG key distributed on keyservers with ID `8638EE95`. The
+fingerprint is:
+
+    23D6 18B5 3AB8 209F F172  C070 6E5C D3ED 8638 EE95
+
+For a more detailed primer on GPG signatures and key authenticity, check out
+[the Apache Software Foundation's doc](http://www.apache.org/info/verification.html).
 
 *Cross-compiled binaries are possibly untested—please report any issues. If you
 would like a binary build for a platform that is not currently published, I'm
