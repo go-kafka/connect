@@ -201,10 +201,7 @@ func main() {
 }
 
 func run(subcommand string) error {
-	client := connect.NewClient(nil)
-	if host != nil {
-		client.BaseURL = host
-	}
+	client := connect.NewClient(host.String())
 
 	// Dispatch subcommands
 	switch subcommand {

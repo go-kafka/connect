@@ -25,27 +25,42 @@ const (
 
 // A Client manages communication with the Kafka Connect REST API.
 type Client struct {
-	// HTTP client used to communicate with the API.
-	client *http.Client
+	host *url.URL // Base host URL for API requests.
 
-	// Base URL for API requests. Defaults to http://localhost:8083/. BaseURL
-	// should always be specified with a trailing slash.
-	BaseURL *url.URL
+	// HTTP client used to communicate with the API. By default
+	// http.DefaultClient will be used.
+	HTTPClient *http.Client
 
 	// User agent used when communicating with the Kafka Connect API.
 	UserAgent string
 }
 
-// NewClient returns a new Kafka Connect API client. If a nil httpClient is
-// provided, http.DefaultClient will be used.
-func NewClient(httpClient *http.Client) *Client {
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-	}
-	baseURL, _ := url.Parse(DefaultHostURL)
+// NewClient returns a new Kafka Connect API client that communicates with the
+// optional host. If no host is given, DefaultHostURL (localhost) is used.
+func NewClient(host ...string) *Client {
+	var hostURL *url.URL
+	var err error
 
-	client := &Client{client: httpClient, BaseURL: baseURL, UserAgent: userAgent}
-	return client
+	switch len(host) {
+	case 0:
+		hostURL, _ = url.Parse(DefaultHostURL)
+	case 1:
+		hostURL, err = url.Parse(host[0])
+		if err != nil {
+			panic(err.Error())
+		}
+	default:
+		panic("only one host URL can be given")
+	}
+
+	return &Client{host: hostURL, UserAgent: userAgent}
+}
+
+func (c *Client) httpClient() *http.Client {
+	if c.HTTPClient == nil {
+		return http.DefaultClient
+	}
+	return c.HTTPClient
 }
 
 // NewRequest creates an API request. A relative URL can be provided in path,
@@ -59,7 +74,7 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*http.Reques
 		return nil, err
 	}
 
-	url := c.BaseURL.ResolveReference(rel)
+	url := c.host.ResolveReference(rel)
 
 	var contentType string
 	var buf io.ReadWriter
@@ -92,7 +107,7 @@ func (c *Client) NewRequest(method, path string, body interface{}) (*http.Reques
 // JSON-decoded and stored in the value pointed to by v, or returned as an
 // error if an API or HTTP error has occurred.
 func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
-	response, err := c.client.Do(req)
+	response, err := c.httpClient().Do(req)
 	if err != nil {
 		return nil, err
 	}

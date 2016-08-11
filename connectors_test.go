@@ -2,7 +2,6 @@ package connect_test
 
 import (
 	"net/http"
-	"net/url"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,9 +21,7 @@ var (
 var _ = Describe("Connector CRUD", func() {
 	BeforeEach(func() {
 		server = ghttp.NewServer()
-		url, _ := url.Parse(server.URL())
-		client = NewClient(nil)
-		client.BaseURL = url
+		client = NewClient(server.URL())
 	})
 
 	AfterEach(func() {
@@ -430,9 +427,7 @@ var _ = Describe("Connector CRUD", func() {
 var _ = Describe("Connector Lifecycle", func() {
 	BeforeEach(func() {
 		server = ghttp.NewServer()
-		url, _ := url.Parse(server.URL())
-		client = NewClient(nil)
-		client.BaseURL = url
+		client = NewClient(server.URL())
 	})
 
 	AfterEach(func() {
