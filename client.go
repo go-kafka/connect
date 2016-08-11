@@ -63,6 +63,11 @@ func (c *Client) httpClient() *http.Client {
 	return c.HTTPClient
 }
 
+// Host returns the API root URL the Client is configured to talk to.
+func (c *Client) Host() string {
+	return c.host.String()
+}
+
 // NewRequest creates an API request. A relative URL can be provided in path,
 // in which case it is resolved relative to the BaseURL of the Client.
 // Relative URLs should always be specified without a preceding slash. If
