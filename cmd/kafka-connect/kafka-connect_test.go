@@ -98,7 +98,7 @@ var _ = Describe("Argument Validation", func() {
 				})
 
 				AfterEach(func() {
-					os.Remove(existingFilepath)
+					_ = os.Remove(existingFilepath)
 				})
 
 				It("fails", func() {
@@ -136,7 +136,7 @@ var _ = Describe("Argument Validation", func() {
 				})
 
 				AfterEach(func() {
-					os.Remove(existingFilepath)
+					_ = os.Remove(existingFilepath)
 				})
 
 				Context("and --from-file", func() {

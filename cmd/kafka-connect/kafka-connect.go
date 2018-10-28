@@ -260,7 +260,7 @@ func run(subcommand string) error {
 		return err
 
 	default: // won't reach here, arg parsing handles unknown commands
-		return fmt.Errorf("Command `%v` is missing implementation!", subcommand)
+		return fmt.Errorf("command `%v` is missing implementation", subcommand)
 	}
 }
 
