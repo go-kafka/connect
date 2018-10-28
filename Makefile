@@ -5,15 +5,17 @@ GO ?= go
 SHASUM := shasum -a 256
 VERSION := $(shell git describe)
 
-packages := . ./cmd/...
+packages := ./...
 fordist := find * -type d -exec
 
+# Should use -mod=readonly in CI
 build:
 	$(GO) build $(packages)
 
 install:
 	$(GO) install $(packages)
 
+# Use `test all` now for CI? https://research.swtch.com/vgo-cmd
 # Re: ginkgo, https://github.com/onsi/ginkgo/issues/278
 test:
 	$(GO) test $(packages)
@@ -29,13 +31,11 @@ coverage:
 browse-coverage: coverage
 	$(GO) tool cover --html connect.coverprofile
 
-# golint only takes one package or else it thinks multiple arguments are
-# directories (which it also doesn't support), ./... includes vendor :-/
 lint:
-	$(foreach pkg, $(packages), golint --set_exit_status $(pkg);)
+	golint --set_exit_status ./...
 
-# TODO: add to CI after dropping 1.5 support
-# https://github.com/kisielk/errcheck/issues/75
+# Now it needs to be fixed for modules:
+# https://github.com/kisielk/errcheck/issues/155
 errcheck:
 	errcheck --asserts --ignore 'io:Close' $(packages)
 
@@ -87,10 +87,6 @@ man: install
 clean:
 	$(RM) *.coverprofile
 	$(RM) -r man
-
-# In case you forget -s -v when using `glide get`.
-clean-vendor:
-	glide install --strip-vcs --strip-vendor
 
 distclean: clean
 	$(RM) -r dist/

@@ -1,16 +1,16 @@
 language: go
 go:
-  - 1.5
-  - 1.6
+  - 1.11
   - tip
 
 env:
   global:
-    - GO15VENDOREXPERIMENT=1
+    # Travis puts the checkout into GOPATH, so we need to force modules
+    - GO111MODULE=on
 
 install:
   - make get-devtools
-  - export PATH=$PATH:$HOME/gopath/bin
+  - export PATH=$PATH:$GOPATH/bin
 
 script:
   - make lint coverage

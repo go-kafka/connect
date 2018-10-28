@@ -14,6 +14,12 @@ The CLI's output, exit codes, etc. are provisional and subject to change until
 a 1.0 release—please consult the change log before installing new versions if
 you rely on these for scripting.
 
+Unreleased Changes
+------------------
+
+Updated the build to Go 1.11, and only this version in order to use modules and
+drop Glide and not keep dependencies vendored. No functional changes.
+
 kafka-connect CLI
 -----------------
 

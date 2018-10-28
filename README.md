@@ -162,23 +162,24 @@ Predictably, use `--completion-script-zsh` for zsh.
 Building and Development
 ------------------------
 
-This project is implemented in Go and uses [Glide] to achieve reproducible
-builds. You don't need Glide unless you want to make changes to dependencies,
-though, since the dependency sources are checked into source control.
+This project is implemented in Go and uses [Go 1.11 modules] to achieve
+reproducible builds.
 
 Once you [have a working Go toolchain][write go], it is simple to build like
-any standard Go project:
+any Go project that uses modules:
 
 ```sh
-$ go get -d github.com/go-kafka/connect/...
-$ cd $GOPATH/github.com/go-kafka/connect
+# In someplace you'd like to keep your work:
+$ git clone git@github.com:go-kafka/connect.git
+$ cd connect
 $ go build    # or
 $ go install  # or
 $ go test     # etc.
 ```
 
-If you are building with Go 1.5, be sure to `export GO15VENDOREXPERIMENT=1` to
-resolve the dependencies in `vendor/`. This is default in Go 1.6.
+Note that you _do not_ need to use a workspace, i.e. `$GOPATH`. In fact, you
+should not, or else you'll need to set `GO111MODULE=1` in your shell
+environment to force module-aware mode on.
 
 Cross-compiling is again standard Go procedure: set `GOOS` and `GOARCH`. For
 example if you wanted to build a CLI tool binary for Linux on ARM:
@@ -194,12 +195,9 @@ kafka-connect: ELF 32-bit LSB executable, ARM, version 1 (SYSV), statically link
 This project uses the [Ginkgo] BDD testing library. You can run the tests
 normally with `go test` or `make test`. If you wish to use additional features
 of [the Ginkgo CLI tool][ginkgo cli] like `watch` mode or generating stub test
-files, etc. you'll need to install it on your regular `GOPATH` using:
+files, etc. you'll need to install it using:
 
-    $ go install github.com/onsi/ginkgo/ginkgo
-
-This tool is not included in `vendor/`, in part because [Glide doesn't support
-that yet][glide execs], and also because it's optional.
+    $ go get github.com/onsi/ginkgo/ginkgo
 
 ### Using the Go Library ###
 
@@ -212,7 +210,7 @@ $ go get -u github.com/go-kafka/connect
 ```
 
 The library has no dependencies beyond the standard library. Dependencies in
-this repository's `vendor/` are for the CLI tool (the `cmd` sub-package, not
+this repository's `go.mod` are for the CLI tool (the `cmd` sub-package, not
 installed unless you append `/...` to the `go get` command above).
 
 See the API documentation linked above for examples.
@@ -253,11 +251,10 @@ see the [LICENSE](LICENSE) file for full details.
 [Kafka Connect]: http://docs.confluent.io/current/connect/intro.html
 [REST API]: http://docs.confluent.io/current/connect/userguide.html#rest-interface
 [releases]: https://github.com/go-kafka/connect/releases
-[Glide]: https://glide.sh/
+[Go 1.11 modules]: https://github.com/golang/go/wiki/Modules
 [write go]: https://golang.org/doc/install
 [Ginkgo]: https://onsi.github.io/ginkgo/
 [ginkgo cli]: https://onsi.github.io/ginkgo/#the-ginkgo-cli
-[glide execs]: https://github.com/Masterminds/glide/pull/331
 
 [release-badge]: https://img.shields.io/github/release/go-kafka/connect.svg
 [latest release]: https://github.com/go-kafka/connect/releases/latest

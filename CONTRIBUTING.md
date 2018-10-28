@@ -18,6 +18,7 @@ pull requests will be checked to pass the same procedure. The convenience `make
 get-devtools` target can install any tools that you're missing.
 
 If you wish to contribute a change that involves updating dependencies, please
-use Glide in order to `glide update` or `glide get` the source in `vendor/`.
-Use a version constraint, unless the package is imported via gopkg.in with v1
-or above.
+use Go 1.11 or later for your work so that [the `go` tool supports managing
+`go.mod`][mod].
+
+[mod]: https://tip.golang.org/cmd/go/#hdr-Maintaining_module_requirements
