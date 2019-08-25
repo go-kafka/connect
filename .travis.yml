@@ -1,6 +1,7 @@
 language: go
 go:
   - 1.11
+  - 1.12
   - tip
 
 env:
@@ -13,7 +14,7 @@ install:
   - export PATH=$PATH:$GOPATH/bin
 
 script:
-  - make lint coverage
+  - make check coverage
 
 after_success:
   - |

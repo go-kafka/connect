@@ -31,13 +31,13 @@ coverage:
 browse-coverage: coverage
 	$(GO) tool cover --html connect.coverprofile
 
+check: lint errcheck
+
 lint:
 	golint --set_exit_status ./...
 
-# Now it needs to be fixed for modules:
-# https://github.com/kisielk/errcheck/issues/155
 errcheck:
-	errcheck --asserts --ignore 'io:Close' $(packages)
+	errcheck --asserts --exclude=err-excludes.txt $(packages)
 
 zen:
 	ginkgo watch -notify $(packages)
@@ -93,5 +93,5 @@ distclean: clean
 	$(GO) clean -i $(packages)
 
 .PHONY: build install test spec coverage browse-coverage
-.PHONY: lint errcheck zen get-devtools
+.PHONY: check lint errcheck zen get-devtools
 .PHONY: dist get-reltools man release

@@ -178,7 +178,7 @@ $ go test     # etc.
 ```
 
 Note that you _do not_ need to use a workspace, i.e. `$GOPATH`. In fact, you
-should not, or else you'll need to set `GO111MODULE=1` in your shell
+should not, or else you'll need to set `GO111MODULE=on` in your shell
 environment to force module-aware mode on.
 
 Cross-compiling is again standard Go procedure: set `GOOS` and `GOARCH`. For
@@ -206,7 +206,7 @@ files, etc. you'll need to install it using:
 To use the Go library, simply use `go get` and import it in your code as usual:
 
 ```sh
-$ go get -u github.com/go-kafka/connect
+$ go get github.com/go-kafka/connect
 ```
 
 The library has no dependencies beyond the standard library. Dependencies in
