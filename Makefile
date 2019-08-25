@@ -44,13 +44,13 @@ zen:
 
 get-devtools:
 	@echo Getting golint...
-	$(GO) get -u github.com/golang/lint/golint
+	$(GO) install golang.org/x/lint/golint
 	@echo Getting errcheck...
-	$(GO) get -u github.com/kisielk/errcheck
+	$(GO) install github.com/kisielk/errcheck
 
 get-reltools:
 	@echo Getting gox...
-	$(GO) get -u github.com/mitchellh/gox
+	$(GO) install github.com/mitchellh/gox
 
 dist: test
 	@echo Cross-compiling binaries...
